@@ -125,10 +125,22 @@ const hint = document.getElementById('hint')
 const loader = document.getElementById('app-loader')
 let started = false
 
+// --- Auto-ocultar controles (para capturas limpias); reaparecen al tocar ---
+let uiTimer
+function showUI() {
+  document.body.classList.remove('ui-hidden')
+  clearTimeout(uiTimer)
+  uiTimer = setTimeout(() => document.body.classList.add('ui-hidden'), 3500)
+}
+;['pointerdown', 'pointermove', 'wheel', 'touchstart', 'keydown'].forEach((e) =>
+  window.addEventListener(e, showUI, { passive: true })
+)
+
 function start() {
   if (started) return
   started = true
   document.body.classList.add('ready') // revela el boton de configuracion
+  showUI() // arranca el temporizador de auto-ocultado
   if (loader) {
     loader.classList.add('hidden')
     setTimeout(() => loader.remove(), 800)
