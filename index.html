@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0d0b1a" />
+    <title>Un detalle eterno</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B8%3C/text%3E%3C/svg%3E" />
+    <!-- CSS critico: evita el flash sin estilos antes de que cargue todo -->
+    <style>
+      html, body { margin: 0; height: 100%; background: #0d0b1a; overflow: hidden; }
+      canvas#scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+      #panel { position: fixed; right: 0; bottom: 0; transform: translateY(130%); }
+      #panel-toggle, #hint, #dedication, #photo-btn { opacity: 0; }
+      #app-loader {
+        position: fixed; inset: 0; z-index: 50; display: grid; place-items: center;
+        background: radial-gradient(120% 120% at 50% 35%, #241d3d 0%, #0d0b1a 70%);
+        transition: opacity 0.7s ease;
+      }
+      #app-loader.hidden { opacity: 0; pointer-events: none; }
+      #app-loader .dot {
+        width: 46px; height: 46px; color: #f4c6d8; font-size: 46px; line-height: 46px;
+        animation: ldspin 1.6s linear infinite; text-align: center;
+      }
+      @keyframes ldspin { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <!-- Cargador (se oculta cuando la escena esta lista) -->
+    <div id="app-loader"><div class="dot">✿</div></div>
+
+    <!-- Lienzo 3D -->
+    <canvas id="scene"></canvas>
+
+    <!-- Dedicatoria -->
+    <div id="dedication"><span>Para Fiorella</span></div>
+
+    <!-- Pista de interaccion -->
+    <div id="hint">Toca un lirio para abrirlo · arrastra para girar</div>
+
+    <!-- Guardar foto (para redes) -->
+    <button id="photo-btn" aria-label="Guardar foto">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+        <circle cx="12" cy="13" r="4"></circle>
+      </svg>
+    </button>
+
+    <!-- Boton para abrir el panel -->
+    <button id="panel-toggle" aria-label="Personalizar">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+    </button>
+
+    <!-- Panel de personalizacion -->
+    <aside id="panel" aria-hidden="true">
+      <div class="panel-head">
+        <div class="grabber"></div>
+        <h2>Personalizar</h2>
+        <button id="panel-close" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="lirios">Lirios</button>
+        <button class="tab" data-tab="jarron">Jarrón</button>
+        <button class="tab" data-tab="tema">Tema</button>
+      </div>
+
+      <!-- TAB LIRIOS -->
+      <section class="tab-panel active" data-panel="lirios">
+        <label class="field">
+          <span>Color de los lirios</span>
+          <div class="swatches" id="lily-swatches"></div>
+        </label>
+        <label class="field">
+          <span>Color personalizado</span>
+          <input type="color" id="lily-color" value="#f2a0c4" />
+        </label>
+        <label class="field">
+          <span>Color del centro / garganta</span>
+          <input type="color" id="lily-throat" value="#e6f0c2" />
+        </label>
+        <label class="field">
+          <span>Cantidad de flores <b id="count-val">9</b></span>
+          <input type="range" id="lily-count" min="3" max="12" step="1" value="9" />
+        </label>
+        <div class="btn-row">
+          <button id="open-all" class="ghost">Abrir todas</button>
+          <button id="close-all" class="ghost">Cerrar todas</button>
+        </div>
+      </section>
+
+      <!-- TAB JARRON -->
+      <section class="tab-panel" data-panel="jarron">
+        <label class="field">
+          <span>Forma</span>
+          <div class="seg" id="vase-shape">
+            <button data-val="bulbo" class="active">Bulbo</button>
+            <button data-val="anfora">Ánfora</button>
+            <button data-val="columna">Columna</button>
+          </div>
+        </label>
+        <label class="field">
+          <span>Material</span>
+          <div class="seg" id="vase-material">
+            <button data-val="ceramica" class="active">Cerámica</button>
+            <button data-val="vidrio">Vidrio</button>
+            <button data-val="metal">Metal</button>
+          </div>
+        </label>
+        <label class="field">
+          <span>Color del jarrón</span>
+          <input type="color" id="vase-color" value="#e9e2d6" />
+        </label>
+      </section>
+
+      <!-- TAB TEMA -->
+      <section class="tab-panel" data-panel="tema">
+        <label class="field">
+          <span>Ambiente</span>
+          <div class="theme-grid" id="theme-grid"></div>
+        </label>
+      </section>
+    </aside>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

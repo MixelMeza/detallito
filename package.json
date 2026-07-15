@@ -1,0 +1,20 @@
+{
+  "name": "regalo-lirios",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Escena 3D interactiva y realista de lirios en un jarron personalizable",
+  "scripts": {
+    "dev": "vite --port 8080 --host",
+    "build": "vite build",
+    "preview": "vite preview --port 8080 --host"
+  },
+  "dependencies": {
+    "gsap": "^3.12.5",
+    "three": "^0.169.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0",
+    "vite-plugin-singlefile": "^2.3.3"
+  }
+}
