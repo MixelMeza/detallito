@@ -149,11 +149,11 @@ export const ORCHID_DEFAULTS = {
 
 // 3 sepalos + 2 petalos (alas); los petalos, mas anchos y adyacentes al dorsal
 const SEGMENTS = [
-  { rot: 0, wx: 0.95, wy: 0.98 }, // sepalo dorsal (arriba)
-  { rot: 70, wx: 1.3, wy: 1.05 }, // petalo (ala)
-  { rot: 290, wx: 1.3, wy: 1.05 }, // petalo (ala)
-  { rot: 145, wx: 1.02, wy: 0.95 }, // sepalo lateral
-  { rot: 215, wx: 1.02, wy: 0.95 } // sepalo lateral
+  { rot: 0, wx: 0.95, wy: 0.98, ph: 0.0 }, // sepalo dorsal (arriba)
+  { rot: 70, wx: 1.3, wy: 1.05, ph: 0.18 }, // petalo (ala)
+  { rot: 290, wx: 1.3, wy: 1.05, ph: 0.18 }, // petalo (ala)
+  { rot: 145, wx: 1.02, wy: 0.95, ph: 0.08 }, // sepalo lateral
+  { rot: 215, wx: 1.02, wy: 0.95, ph: 0.08 } // sepalo lateral
 ]
 
 export function createOrchid({ petalMaterial, seed = 0 }) {
@@ -170,6 +170,7 @@ export function createOrchid({ petalMaterial, seed = 0 }) {
     mesh.scale.y = s.wy
     mesh.updateMorphTargets()
     mesh.userData.bloomBias = 0.94 + hash(seed * 31 + i) * 0.1
+    mesh.userData.phase = s.ph + hash(seed * 41 + i) * 0.05
     mesh.morphTargetInfluences[0] = 0
     mesh.userData.isPetal = true
     group.add(mesh)
@@ -220,12 +221,18 @@ export function createOrchid({ petalMaterial, seed = 0 }) {
   let bloom = 0
   function setBloom(t) {
     bloom = THREE.MathUtils.clamp(t, 0, 1)
-    for (const m of meshes) m.morphTargetInfluences[0] = Math.min(1, bloom * m.userData.bloomBias)
+    for (const m of meshes) {
+      let e = (bloom - m.userData.phase) / Math.max(0.001, 1 - m.userData.phase)
+      e = THREE.MathUtils.clamp(e, 0, 1)
+      e = e * e * (3 - 2 * e)
+      m.morphTargetInfluences[0] = Math.min(1, e * m.userData.bloomBias)
+    }
     const k = THREE.MathUtils.smoothstep(bloom, 0.08, 0.5)
     petalMaterial.color.lerpColors(BUD_TINT, OPEN_TINT, k)
-    lipGroup.visible = bloom > 0.35
-    const s = THREE.MathUtils.clamp((bloom - 0.35) / 0.65, 0, 1)
-    lipGroup.scale.setScalar(0.6 + s * 0.4)
+    // el labio (la firma) emerge al final, cuando la cara ya se abrio
+    lipGroup.visible = bloom > 0.5
+    const s = THREE.MathUtils.clamp((bloom - 0.5) / 0.5, 0, 1)
+    lipGroup.scale.setScalar(0.5 + s * s * (3 - 2 * s) * 0.5)
   }
   setBloom(0)
 

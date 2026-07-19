@@ -169,6 +169,7 @@ export function createTulip({ petalMaterial, seed = 0 }) {
     mesh.scale.y = 0.97 + hash(seed * 23 + i) * 0.08
     mesh.updateMorphTargets()
     mesh.userData.bloomBias = 0.92 + hash(seed * 31 + i) * 0.12
+    mesh.userData.phase = (inner ? 0.16 : 0.0) + hash(seed * 41 + i) * 0.08
     mesh.morphTargetInfluences[0] = 0
     mesh.userData.isPetal = true
     group.add(mesh)
@@ -211,12 +212,17 @@ export function createTulip({ petalMaterial, seed = 0 }) {
   let bloom = 0
   function setBloom(t) {
     bloom = THREE.MathUtils.clamp(t, 0, 1)
-    for (const m of meshes) m.morphTargetInfluences[0] = Math.min(1, bloom * m.userData.bloomBias)
+    for (const m of meshes) {
+      let e = (bloom - m.userData.phase) / Math.max(0.001, 1 - m.userData.phase)
+      e = THREE.MathUtils.clamp(e, 0, 1)
+      e = e * e * (3 - 2 * e)
+      m.morphTargetInfluences[0] = Math.min(1, e * m.userData.bloomBias)
+    }
     const k = THREE.MathUtils.smoothstep(bloom, 0.08, 0.5)
     petalMaterial.color.lerpColors(BUD_TINT, OPEN_TINT, k)
-    stamenGroup.visible = bloom > 0.4
-    const s = THREE.MathUtils.clamp((bloom - 0.4) / 0.6, 0, 1)
-    stamenGroup.scale.setScalar(0.7 + s * 0.3)
+    stamenGroup.visible = bloom > 0.45
+    const s = THREE.MathUtils.clamp((bloom - 0.45) / 0.55, 0, 1)
+    stamenGroup.scale.setScalar(0.6 + s * s * (3 - 2 * s) * 0.4)
   }
   setBloom(0)
 

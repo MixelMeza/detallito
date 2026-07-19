@@ -235,6 +235,8 @@ export function createLily({ petalMaterial, seed = 0 }) {
     mesh.scale.x = 0.97 + hash(seed * 29 + i) * 0.07
     mesh.updateMorphTargets()
     mesh.userData.bloomBias = 0.9 + hash(seed * 31 + i) * 0.16
+    // fase de apertura: el verticilo externo abre primero, el interno despues
+    mesh.userData.phase = (inner ? 0.18 : 0.0) + hash(seed * 41 + i) * 0.1
     mesh.morphTargetInfluences[0] = 0
     mesh.userData.isPetal = true
     group.add(mesh)
@@ -285,17 +287,20 @@ export function createLily({ petalMaterial, seed = 0 }) {
   let bloom = 0
   function setBloom(t) {
     bloom = THREE.MathUtils.clamp(t, 0, 1)
-    // cada tepalo abre un pelin distinto (bias) -> apertura mas natural
+    // apertura PASO A PASO: cada tepalo se despliega en su turno (fase)
     for (const m of tepalMeshes) {
-      m.morphTargetInfluences[0] = Math.min(1, bloom * m.userData.bloomBias)
+      let e = (bloom - m.userData.phase) / Math.max(0.001, 1 - m.userData.phase)
+      e = THREE.MathUtils.clamp(e, 0, 1)
+      e = e * e * (3 - 2 * e) // suavizado
+      m.morphTargetInfluences[0] = Math.min(1, e * m.userData.bloomBias)
     }
     // color segun apertura: capullo verdoso -> color pleno al abrir
-    const k = THREE.MathUtils.smoothstep(bloom, 0.08, 0.5)
+    const k = THREE.MathUtils.smoothstep(bloom, 0.06, 0.45)
     petalMaterial.color.lerpColors(BUD_TINT, OPEN_TINT, k)
-    // los estambres solo se ven cuando la flor ya esta bastante abierta
-    stamenGroup.visible = bloom > 0.35
-    const s = THREE.MathUtils.clamp((bloom - 0.35) / 0.65, 0, 1)
-    stamenGroup.scale.setScalar(0.82 * (0.6 + s * 0.4))
+    // los estambres emergen al final, cuando los petalos ya se abrieron
+    stamenGroup.visible = bloom > 0.45
+    const s = THREE.MathUtils.clamp((bloom - 0.45) / 0.55, 0, 1)
+    stamenGroup.scale.setScalar(0.82 * (0.5 + s * s * (3 - 2 * s) * 0.5))
   }
   setBloom(0)
 
