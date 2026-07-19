@@ -20,7 +20,8 @@ const rad = (d) => (d * Math.PI) / 180
 
 function tepalAngle(u, open) {
   // el perfil (radio vs altura) define la forma; los tepalos lo envuelven
-  if (open) return rad(10 + 50 * Math.pow(u, 1.1)) // CUENCO/bol abierto
+  // abierto: BOL/copa redonda (abre desde la base, vuela poco en la punta)
+  if (open) return rad(22 + 30 * Math.pow(u, 0.9))
   // cerrado: HUEVO -> panza y cierra en la punta
   return rad(40 * Math.cos(Math.PI * Math.min(u * 0.93, 1)))
 }

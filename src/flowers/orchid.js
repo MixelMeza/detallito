@@ -108,14 +108,22 @@ export function makeOrchidTexture(baseHex = '#ffffff') {
   const ctx = c.getContext('2d')
   ctx.fillStyle = baseHex
   ctx.fillRect(0, 0, c.width, c.height)
-  ctx.strokeStyle = 'rgba(150,150,170,0.10)'
-  ctx.lineWidth = 1.5
-  for (let k = -2; k <= 2; k++) {
+  // venas radiales finas mas visibles (dan cuerpo al petalo)
+  ctx.strokeStyle = 'rgba(120,120,140,0.16)'
+  ctx.lineWidth = 1.6
+  for (let k = -4; k <= 4; k++) {
     ctx.beginPath()
-    ctx.moveTo(c.width / 2 + k * 22, c.height)
-    ctx.quadraticCurveTo(c.width / 2 + k * 40, c.height * 0.4, c.width / 2 + k * 30, 0)
+    ctx.moveTo(c.width / 2 + k * 12, c.height)
+    ctx.quadraticCurveTo(c.width / 2 + k * 30, c.height * 0.45, c.width / 2 + k * 24, 0)
     ctx.stroke()
   }
+  // leve sombreado en los bordes (menos aspecto plano/transparente)
+  const vg = ctx.createLinearGradient(0, 0, c.width, 0)
+  vg.addColorStop(0, 'rgba(60,60,80,0.16)')
+  vg.addColorStop(0.5, 'rgba(255,255,255,0)')
+  vg.addColorStop(1, 'rgba(60,60,80,0.16)')
+  ctx.fillStyle = vg
+  ctx.fillRect(0, 0, c.width, c.height)
   // base un pelin mas calida
   const g = ctx.createLinearGradient(0, c.height, 0, c.height * 0.7)
   g.addColorStop(0, 'rgba(245,240,210,0.5)')
