@@ -25,11 +25,10 @@ function smooth01(x) {
   return x * x * (3 - 2 * x)
 }
 function segWidth(u) {
-  // MUY ancho y OBOVADO con punta ROMA -> los petalos se solapan y forman la
-  // cara redonda llena (no estrella de puas)
-  const rise = smooth01(u / 0.16)
-  const roundTip = 1 - 0.4 * smooth01((u - 0.82) / 0.18)
-  return MAX_WIDTH * rise * roundTip
+  // ancho, redondeado y LISO (romo en ambos extremos) -> pétalos que se solapan
+  // en una cara llena, sin bordes facetados/en pua
+  const body = Math.pow(Math.sin(Math.PI * (0.05 + 0.9 * u)), 0.28)
+  return MAX_WIDTH * body * smooth01(u / 0.06)
 }
 
 function buildPositions(open) {
@@ -44,7 +43,7 @@ function buildPositions(open) {
     cy.push(cy[i - 1] + Math.cos(th) * ds)
     cz.push(cz[i - 1] + Math.sin(th) * ds)
   }
-  const channel = open ? 0.1 : 0.52 // plano abierto; envuelve fuerte el capullo
+  const channel = open ? 0.18 : 0.52 // leve cuenco abierto (con forma); envuelve el capullo
   for (let i = 0; i <= U; i++) {
     const u = i / U
     const w = segWidth(u)

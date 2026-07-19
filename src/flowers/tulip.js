@@ -11,17 +11,17 @@ import * as THREE from 'three'
 
 const U = 24
 const V = 16
-const LENGTH = 1.7
-const MAX_WIDTH = 1.02
-const BASE_RADIUS = 0.03 // convergen casi en un punto -> base limpia hacia el tallo
+const LENGTH = 1.9
+const BASE_RADIUS = 0.04
+// media anchura ANGULAR del tepalo (rad): 6 tepalos * 2*ALPHA ~ 360 -> envuelven
+// la flor formando una superficie continua (copa/huevo) que se abraza
+const ALPHA_MAX = 0.62
 const rad = (d) => (d * Math.PI) / 180
 
 function tepalAngle(u, open) {
-  // abierto: CUENCO redondo y hondo (no estrella plana); la punta apenas se
-  // abre ~50 grados y se redondea, como un tulipan abierto real
-  if (open) return rad(6 + 44 * Math.pow(u, 1.2))
-  // cerrado: HUEVO real -> el tepalo sale hacia afuera formando la PANZA y
-  // luego se CURVA hacia dentro cerrando en la punta (arriba mas cerrado)
+  // el perfil (radio vs altura) define la forma; los tepalos lo envuelven
+  if (open) return rad(10 + 50 * Math.pow(u, 1.1)) // CUENCO/bol abierto
+  // cerrado: HUEVO -> panza y cierra en la punta
   return rad(40 * Math.cos(Math.PI * Math.min(u * 0.93, 1)))
 }
 
@@ -30,12 +30,11 @@ function smooth01(x) {
   return x * x * (3 - 2 * x)
 }
 
-function tepalWidth(u) {
-  // MUY ancho y OBOVADO con punta ROMA (redondeada) -> los tepalos se abrazan
-  // y forman una curva lisa (no puas). Garra estrecha solo en la base.
-  const rise = smooth01(u / 0.2)
-  const roundTip = 1 - 0.52 * smooth01((u - 0.8) / 0.2)
-  return MAX_WIDTH * rise * roundTip
+// perfil obovado 0..1 (garra en la base, ancho en la panza, punta roma)
+function shapeWidth(u) {
+  const rise = smooth01(u / 0.16)
+  const roundTip = 1 - 0.5 * smooth01((u - 0.82) / 0.18)
+  return rise * roundTip
 }
 
 function buildPositions(open) {
@@ -50,21 +49,16 @@ function buildPositions(open) {
     cy.push(cy[i - 1] + Math.cos(th) * ds)
     cz.push(cz[i - 1] + Math.sin(th) * ds)
   }
-  const channel = open ? 0.2 : 0.4 // cuenco SUAVE (sin bordes en pua); envuelve cerrado
+  // cada punto se ENVUELVE en un arco de radio cz alrededor del eje -> el tepalo
+  // es un trozo de la superficie de la flor (copa/huevo), no una lamina plana
   for (let i = 0; i <= U; i++) {
     const u = i / U
-    const w = tepalWidth(u)
-    const iN = Math.min(i, U - 1)
-    const dy = cy[iN + 1] - cy[iN]
-    const dz = cz[iN + 1] - cz[iN]
-    const tl = Math.hypot(dy, dz) || 1
-    const ny = dz / tl
-    const nz = -dy / tl
+    const alpha = ALPHA_MAX * shapeWidth(u)
+    const r = cz[i]
     for (let j = 0; j <= V; j++) {
       const v = (j / V) * 2 - 1
-      const across = v * w
-      const cup = channel * (v * v) * w
-      positions.push(across, cy[i] + ny * cup, cz[i] + nz * cup)
+      const th = v * alpha
+      positions.push(r * Math.sin(th), cy[i], r * Math.cos(th))
       uvs.push((v + 1) / 2, u)
     }
   }
