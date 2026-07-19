@@ -8,10 +8,10 @@ import * as THREE from 'three'
  */
 
 const U = 16
-const V = 14
-const LENGTH = 1.5
-const MAX_WIDTH = 1.05
-const BASE_RADIUS = 0.13
+const V = 16
+const LENGTH = 1.42
+const MAX_WIDTH = 1.32
+const BASE_RADIUS = 0.12
 const rad = (d) => (d * Math.PI) / 180
 
 function segAngle(u, open) {
@@ -26,9 +26,10 @@ function smooth01(x) {
   return x * x * (3 - 2 * x)
 }
 function segWidth(u) {
-  // ANCHO y REDONDEADO (romo en ambos extremos) para solaparse -> cara llena
-  const body = Math.pow(Math.sin(Math.PI * (0.05 + 0.9 * u)), 0.32)
-  return MAX_WIDTH * body * smooth01(u / 0.05)
+  // MUY ancho y REDONDEADO (romo en ambos extremos) -> se solapan y llenan la
+  // cara; base algo ancha para tapar el centro (menos estrella/huecos)
+  const body = Math.pow(Math.sin(Math.PI * (0.04 + 0.92 * u)), 0.26)
+  return MAX_WIDTH * body * smooth01(u / 0.04)
 }
 
 function buildPositions(open) {
@@ -149,11 +150,11 @@ export const ORCHID_DEFAULTS = {
 
 // 3 sepalos + 2 petalos (alas); los petalos, mas anchos y adyacentes al dorsal
 const SEGMENTS = [
-  { rot: 0, wx: 0.95, wy: 0.98, ph: 0.0 }, // sepalo dorsal (arriba)
-  { rot: 70, wx: 1.3, wy: 1.05, ph: 0.18 }, // petalo (ala)
-  { rot: 290, wx: 1.3, wy: 1.05, ph: 0.18 }, // petalo (ala)
-  { rot: 145, wx: 1.02, wy: 0.95, ph: 0.08 }, // sepalo lateral
-  { rot: 215, wx: 1.02, wy: 0.95, ph: 0.08 } // sepalo lateral
+  { rot: 0, wx: 1.06, wy: 1.0, ph: 0.0 }, // sepalo dorsal (arriba)
+  { rot: 68, wx: 1.5, wy: 1.08, ph: 0.18 }, // petalo (ala) grande
+  { rot: 292, wx: 1.5, wy: 1.08, ph: 0.18 }, // petalo (ala) grande
+  { rot: 142, wx: 1.18, wy: 0.96, ph: 0.08 }, // sepalo lateral
+  { rot: 218, wx: 1.18, wy: 0.96, ph: 0.08 } // sepalo lateral
 ]
 
 export function createOrchid({ petalMaterial, seed = 0 }) {
