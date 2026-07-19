@@ -17,8 +17,9 @@ const rad = (d) => (d * Math.PI) / 180
 function segAngle(u, open) {
   // abierto: cara plana con una leve curvatura hacia el frente (~78 grados)
   if (open) return rad(20 + 58 * Math.pow(u, 0.92))
-  // cerrado: segmentos plegados formando un capullo redondeado
-  return rad(6 - 24 * u)
+  // cerrado: capullo en TEARDROP -> los segmentos salen a la panza y se cierran
+  // en la punta (curva de verdad, no un pliegue plano)
+  return rad(42 * Math.cos(Math.PI * Math.min(u * 0.84, 1)))
 }
 function smooth01(x) {
   x = Math.max(0, Math.min(1, x))
@@ -42,7 +43,7 @@ function buildPositions(open) {
     cy.push(cy[i - 1] + Math.cos(th) * ds)
     cz.push(cz[i - 1] + Math.sin(th) * ds)
   }
-  const channel = open ? 0.13 : 0.38 // leve curvatura abierta; plegado cerrado
+  const channel = open ? 0.13 : 0.5 // plano abierto; envuelve el capullo cerrado
   for (let i = 0; i <= U; i++) {
     const u = i / U
     const w = segWidth(u)

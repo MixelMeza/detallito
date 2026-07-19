@@ -9,19 +9,20 @@ import * as THREE from 'three'
  *   trilobulado palido. Mancha basal oscura en la textura.
  */
 
-const U = 20
+const U = 22
 const V = 12
 const LENGTH = 1.95
-const MAX_WIDTH = 0.74
-const BASE_RADIUS = 0.1
+const MAX_WIDTH = 0.8
+const BASE_RADIUS = 0.09
 const rad = (d) => (d * Math.PI) / 180
 
 function tepalAngle(u, open) {
   // abierto: CUENCO redondo y hondo (no estrella plana); la punta apenas se
   // abre ~50 grados y se redondea, como un tulipan abierto real
   if (open) return rad(6 + 46 * Math.pow(u, 1.15))
-  // cerrado: huevo liso; las puntas convergen suave hacia dentro
-  return rad(9 - 15 * u)
+  // cerrado: HUEVO real -> el tepalo sale hacia afuera formando la PANZA y
+  // luego se CURVA hacia dentro cerrando en la punta redondeada
+  return rad(38 * Math.cos(Math.PI * Math.min(u * 0.9, 1)))
 }
 
 function smooth01(x) {
@@ -47,7 +48,7 @@ function buildPositions(open) {
     cy.push(cy[i - 1] + Math.cos(th) * ds)
     cz.push(cz[i - 1] + Math.sin(th) * ds)
   }
-  const channel = open ? 0.42 : 0.55 // cuenco marcado (forma la copa honda)
+  const channel = open ? 0.42 : 0.62 // cuenco hondo abierto; envuelve mas cerrado
   for (let i = 0; i <= U; i++) {
     const u = i / U
     const w = tepalWidth(u)
