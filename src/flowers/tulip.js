@@ -9,17 +9,17 @@ import * as THREE from 'three'
  *   trilobulado palido. Mancha basal oscura en la textura.
  */
 
-const U = 22
-const V = 12
-const LENGTH = 1.95
-const MAX_WIDTH = 0.82
+const U = 24
+const V = 16
+const LENGTH = 1.7
+const MAX_WIDTH = 1.02
 const BASE_RADIUS = 0.03 // convergen casi en un punto -> base limpia hacia el tallo
 const rad = (d) => (d * Math.PI) / 180
 
 function tepalAngle(u, open) {
   // abierto: CUENCO redondo y hondo (no estrella plana); la punta apenas se
   // abre ~50 grados y se redondea, como un tulipan abierto real
-  if (open) return rad(6 + 46 * Math.pow(u, 1.15))
+  if (open) return rad(6 + 44 * Math.pow(u, 1.2))
   // cerrado: HUEVO real -> el tepalo sale hacia afuera formando la PANZA y
   // luego se CURVA hacia dentro cerrando en la punta (arriba mas cerrado)
   return rad(40 * Math.cos(Math.PI * Math.min(u * 0.93, 1)))
@@ -31,9 +31,11 @@ function smooth01(x) {
 }
 
 function tepalWidth(u) {
-  // ancho y redondeado (obovado), punta ROMA; ancho pronto para solaparse
-  const body = Math.pow(Math.sin(Math.PI * (0.1 + 0.8 * u)), 0.5)
-  return MAX_WIDTH * body * smooth01(u / 0.08)
+  // MUY ancho y OBOVADO con punta ROMA (redondeada) -> los tepalos se abrazan
+  // y forman una curva lisa (no puas). Garra estrecha solo en la base.
+  const rise = smooth01(u / 0.2)
+  const roundTip = 1 - 0.52 * smooth01((u - 0.8) / 0.2)
+  return MAX_WIDTH * rise * roundTip
 }
 
 function buildPositions(open) {
@@ -48,7 +50,7 @@ function buildPositions(open) {
     cy.push(cy[i - 1] + Math.cos(th) * ds)
     cz.push(cz[i - 1] + Math.sin(th) * ds)
   }
-  const channel = open ? 0.42 : 0.62 // cuenco hondo abierto; envuelve mas cerrado
+  const channel = open ? 0.2 : 0.4 // cuenco SUAVE (sin bordes en pua); envuelve cerrado
   for (let i = 0; i <= U; i++) {
     const u = i / U
     const w = tepalWidth(u)

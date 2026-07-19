@@ -17,19 +17,19 @@ const rad = (d) => (d * Math.PI) / 180
 function segAngle(u, open) {
   // abierto: cara plana con una leve curvatura hacia el frente (~78 grados)
   if (open) return rad(20 + 58 * Math.pow(u, 0.92))
-  // cerrado: capullo en TEARDROP -> los segmentos salen a la panza y se cierran
-  // en la punta (curva de verdad, no un pliegue plano)
-  return rad(42 * Math.cos(Math.PI * Math.min(u * 0.84, 1)))
+  // cerrado: TEARDROP alargado -> panza baja y cierra en punta suave arriba
+  return rad(27 * Math.cos(Math.PI * Math.min(u * 0.96, 1)))
 }
 function smooth01(x) {
   x = Math.max(0, Math.min(1, x))
   return x * x * (3 - 2 * x)
 }
 function segWidth(u) {
-  // MUY ancho y REDONDEADO (romo en ambos extremos) -> se solapan y llenan la
-  // cara; base algo ancha para tapar el centro (menos estrella/huecos)
-  const body = Math.pow(Math.sin(Math.PI * (0.04 + 0.92 * u)), 0.26)
-  return MAX_WIDTH * body * smooth01(u / 0.04)
+  // MUY ancho y OBOVADO con punta ROMA -> los petalos se solapan y forman la
+  // cara redonda llena (no estrella de puas)
+  const rise = smooth01(u / 0.16)
+  const roundTip = 1 - 0.4 * smooth01((u - 0.82) / 0.18)
+  return MAX_WIDTH * rise * roundTip
 }
 
 function buildPositions(open) {
@@ -44,7 +44,7 @@ function buildPositions(open) {
     cy.push(cy[i - 1] + Math.cos(th) * ds)
     cz.push(cz[i - 1] + Math.sin(th) * ds)
   }
-  const channel = open ? 0.13 : 0.5 // plano abierto; envuelve el capullo cerrado
+  const channel = open ? 0.1 : 0.52 // plano abierto; envuelve fuerte el capullo
   for (let i = 0; i <= U; i++) {
     const u = i / U
     const w = segWidth(u)
@@ -162,6 +162,8 @@ export function createOrchid({ petalMaterial, seed = 0 }) {
   const meshes = []
   const geo = getGeometry()
 
+  // La CARA plana (5 segmentos) va en su propio grupo: emerge del capullo.
+  const faceGroup = new THREE.Group()
   SEGMENTS.forEach((s, i) => {
     const mesh = new THREE.Mesh(geo, petalMaterial)
     mesh.castShadow = true
@@ -174,9 +176,24 @@ export function createOrchid({ petalMaterial, seed = 0 }) {
     mesh.userData.phase = s.ph + hash(seed * 41 + i) * 0.05
     mesh.morphTargetInfluences[0] = 0
     mesh.userData.isPetal = true
-    group.add(mesh)
+    faceGroup.add(mesh)
     meshes.push(mesh)
   })
+  group.add(faceGroup)
+
+  // CAPULLO teardrop (malla aparte): limpio y realista cuando esta cerrado;
+  // se encoge al abrir mientras la cara emerge. (Un petalo plano ancho no
+  // pliega bien en capullo -> por eso el capullo es una pieza propia.)
+  const budProfile = [
+    [0.0, 0.0], [0.15, 0.12], [0.24, 0.38], [0.26, 0.66],
+    [0.2, 0.96], [0.1, 1.24], [0.0, 1.4]
+  ].map(([x, y]) => new THREE.Vector2(x, y))
+  const budMesh = new THREE.Mesh(
+    new THREE.LatheGeometry(budProfile, 22),
+    new THREE.MeshStandardMaterial({ color: 0xcdd8ad, roughness: 0.55 })
+  )
+  budMesh.castShadow = true
+  group.add(budMesh)
 
   // --- Labio (labellum) + columna en el centro (la firma de la orquidea) ---
   const lipGroup = new THREE.Group()
@@ -217,29 +234,38 @@ export function createOrchid({ petalMaterial, seed = 0 }) {
     dot.position.set(dx, dy, dz)
     lipGroup.add(dot)
   }
-  group.add(lipGroup)
+  faceGroup.add(lipGroup)
 
   let bloom = 0
   function setBloom(t) {
     bloom = THREE.MathUtils.clamp(t, 0, 1)
+    // capullo: lleno cerrado, se encoge al abrir
+    const budK = 1 - THREE.MathUtils.smoothstep(bloom, 0.05, 0.42)
+    budMesh.visible = budK > 0.02
+    budMesh.scale.setScalar(Math.max(0.001, budK))
+    // la cara emerge del capullo y se abre
+    const faceK = THREE.MathUtils.smoothstep(bloom, 0.16, 0.62)
+    faceGroup.visible = faceK > 0.02
+    faceGroup.scale.setScalar(Math.max(0.001, faceK))
     for (const m of meshes) {
       let e = (bloom - m.userData.phase) / Math.max(0.001, 1 - m.userData.phase)
       e = THREE.MathUtils.clamp(e, 0, 1)
       e = e * e * (3 - 2 * e)
       m.morphTargetInfluences[0] = Math.min(1, e * m.userData.bloomBias)
     }
-    const k = THREE.MathUtils.smoothstep(bloom, 0.08, 0.5)
+    const k = THREE.MathUtils.smoothstep(bloom, 0.3, 0.6)
     petalMaterial.color.lerpColors(BUD_TINT, OPEN_TINT, k)
     // el labio (la firma) emerge al final, cuando la cara ya se abrio
-    lipGroup.visible = bloom > 0.5
-    const s = THREE.MathUtils.clamp((bloom - 0.5) / 0.5, 0, 1)
+    lipGroup.visible = bloom > 0.55
+    const s = THREE.MathUtils.clamp((bloom - 0.55) / 0.45, 0, 1)
     lipGroup.scale.setScalar(0.5 + s * s * (3 - 2 * s) * 0.5)
   }
   setBloom(0)
 
   return {
     group,
-    meshes,
+    // para raycasting: segmentos + el capullo (asi se puede tocar cerrado)
+    meshes: [...meshes, budMesh],
     setBloom,
     get bloom() {
       return bloom
