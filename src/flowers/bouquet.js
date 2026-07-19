@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { gsap } from 'gsap'
-import { createLily, makePetalTexture } from './lily.js'
+import { FLOWER_TYPES } from './registry.js'
 
 /*
  * Arreglo floral.
@@ -33,10 +33,13 @@ export function createBouquet(vase) {
   const group = new THREE.Group()
   const flowers = []
 
-  // El color vive en la textura (bordes blancos + centro rosa)
-  let petalHex = '#f2a0c4'
-  let throatHex = '#e6f0c2'
-  let petalTexture = makePetalTexture(petalHex, throatHex)
+  // Tipo de flor actual (lirio | tulipan | orquidea). El color vive en la textura.
+  let flowerType = 'lirio'
+  let petalHex = FLOWER_TYPES[flowerType].defaults.color
+  let throatHex = FLOWER_TYPES[flowerType].defaults.throat || '#e6f0c2'
+  let petalTexture = FLOWER_TYPES[flowerType].makeTexture(petalHex, throatHex)
+  // la orquidea "mira" mas de frente (cara plana) que lirio/tulipan
+  const faceUp = () => (flowerType === 'orquidea' ? 0.16 : 0.32)
 
   function makePetalMaterial() {
     return new THREE.MeshPhysicalMaterial({
@@ -54,8 +57,6 @@ export function createBouquet(vase) {
       envMapIntensity: 0.6
     })
   }
-  const flowerMaterials = []
-
   const neckY = vase.height * 0.96
 
   function makeStem(head, az) {
@@ -163,35 +164,35 @@ export function createBouquet(vase) {
   }
   relax(heads, radii)
 
-  for (let i = 0; i < MAX; i++) {
-    const { isBud, scale, az } = metas[i]
-    const stemObj = makeStem(heads[i], az)
-
+  // Crea (o recrea) la cabeza de flor del tipo actual sobre su tallo.
+  function buildHead(f) {
+    const { isBud, scale, az } = f.meta
     const mat = makePetalMaterial()
-    flowerMaterials.push(mat)
-    const lily = createLily({ petalMaterial: mat, seed: i + 1 })
-    lily.group.position.copy(stemObj.tip)
-    // todas miran a lo largo de su tallo, inclinadas hacia arriba (mas erguidas,
-    // no caidas). Buds y flores igual -> coherente con el tallo recto.
-    const dir = stemObj.dir.clone().lerp(up, 0.32).normalize()
+    const flower = FLOWER_TYPES[flowerType].create({ petalMaterial: mat, seed: f.index + 1 })
+    f.flower = flower
+    f.material = mat
+    const g = flower.group
+    g.position.copy(f.stemObj.tip)
+    const dir = f.stemObj.dir.clone().lerp(up, faceUp()).normalize()
     const quat = new THREE.Quaternion().setFromUnitVectors(up, dir)
-    lily.group.quaternion.copy(quat)
-    lily.group.userData.baseQuat = quat.clone()
-    lily.group.userData.isBud = isBud
+    g.quaternion.copy(quat)
+    g.userData.baseQuat = quat.clone()
+    g.userData.isBud = isBud
+    g.userData.baseScale = scale
+    g.userData.baseScaleVec = new THREE.Vector3(scale, scale, scale)
+    g.visible = false
+    g.scale.set(0.001, 0.001, 0.001)
+    flower.setBloom(0)
+    group.add(g)
+  }
 
-    const baseScaleVec = new THREE.Vector3(scale, scale, scale)
-    lily.group.userData.baseScale = scale
-    lily.group.userData.baseScaleVec = baseScaleVec
-
-    // arranca inactiva y oculta
-    lily.group.visible = false
-    lily.group.scale.set(0.001, 0.001, 0.001)
+  for (let i = 0; i < MAX; i++) {
+    const stemObj = makeStem(heads[i], metas[i].az)
     stemObj.stem.visible = false
-    lily.setBloom(0)
-
     group.add(stemObj.stem)
-    group.add(lily.group)
-    flowers.push({ lily, stemObj, index: i, active: false, isBud })
+    const f = { stemObj, index: i, active: false, isBud: metas[i].isBud, meta: metas[i] }
+    flowers.push(f)
+    buildHead(f)
   }
 
   // ---- Nacimiento: el tallo CRECE desde el jarron hacia arriba, la flor sube
@@ -200,7 +201,7 @@ export function createBouquet(vase) {
   function activate(f, delay = 0) {
     if (f.active) return
     f.active = true
-    const g = f.lily.group
+    const g = f.flower.group
     const stem = f.stemObj.stem
     const curve = f.stemObj.curve
     const leaves = f.stemObj.leaves
@@ -210,7 +211,7 @@ export function createBouquet(vase) {
     if (f._bloomTween) f._bloomTween.kill()
     g.visible = true
     stem.visible = true
-    f.lily.setBloom(0)
+    f.flower.setBloom(0)
 
     // param 0.5 = boca; el tallo crece de la boca (0.5) hacia la flor (1)
     const apply = (gt) => {
@@ -240,7 +241,7 @@ export function createBouquet(vase) {
         duration: 2.2,
         delay: delay + 1.6, // florece al llegar arriba
         ease: 'power2.out',
-        onUpdate: () => f.lily.setBloom(p.v)
+        onUpdate: () => f.flower.setBloom(p.v)
       })
     }
   }
@@ -248,12 +249,12 @@ export function createBouquet(vase) {
   function deactivate(f) {
     if (!f.active) return
     f.active = false
-    const g = f.lily.group
+    const g = f.flower.group
     const stem = f.stemObj.stem
     if (f._tween) f._tween.kill()
     if (f._bloomTween) f._bloomTween.kill()
-    const p = { v: f.lily.bloom }
-    f._bloomTween = gsap.to(p, { v: 0, duration: 0.4, ease: 'power2.in', onUpdate: () => f.lily.setBloom(p.v) })
+    const p = { v: f.flower.bloom }
+    f._bloomTween = gsap.to(p, { v: 0, duration: 0.4, ease: 'power2.in', onUpdate: () => f.flower.setBloom(p.v) })
     f._tween = gsap.to(g.scale, {
       x: 0.001,
       y: 0.001,
@@ -286,12 +287,43 @@ export function createBouquet(vase) {
   }
 
   function refreshTexture() {
-    const tex = makePetalTexture(petalHex, throatHex)
+    const tex = FLOWER_TYPES[flowerType].makeTexture(petalHex, throatHex)
     petalTexture.dispose()
     petalTexture = tex
-    for (const m of flowerMaterials) {
-      m.map = tex
-      m.needsUpdate = true
+    for (const f of flowers) {
+      if (!f.material) continue
+      f.material.map = tex
+      f.material.needsUpdate = true
+    }
+  }
+
+  // Cambia TODO el ramo a otro tipo de flor (los tallos no se tocan).
+  function setFlowerType(type) {
+    if (!FLOWER_TYPES[type] || type === flowerType) return
+    flowerType = type
+    const d = FLOWER_TYPES[type].defaults
+    petalHex = d.color
+    throatHex = d.throat || throatHex
+    petalTexture.dispose()
+    petalTexture = FLOWER_TYPES[type].makeTexture(petalHex, throatHex)
+    for (const f of flowers) {
+      if (f._tween) f._tween.kill()
+      if (f._bloomTween) f._bloomTween.kill()
+      if (f.flower) {
+        group.remove(f.flower.group)
+        f.flower.group.traverse((o) => {
+          if (o.isMesh && o.material && o.material !== f.material) o.material.dispose()
+        })
+        if (f.material) f.material.dispose()
+      }
+      buildHead(f)
+      if (f.active) {
+        const g = f.flower.group
+        g.visible = true
+        g.scale.copy(g.userData.baseScaleVec)
+        g.position.copy(f.stemObj.tip)
+        f.flower.setBloom(f.isBud ? 0 : 1)
+      }
     }
   }
 
@@ -301,10 +333,14 @@ export function createBouquet(vase) {
     get count() {
       return activeCount
     },
+    get flowerType() {
+      return flowerType
+    },
     activeFlowers() {
       return flowers.filter((f) => f.active)
     },
     setCount,
+    setFlowerType,
     playIntro,
     setPetalColor(hex) {
       petalHex = hex
@@ -318,7 +354,7 @@ export function createBouquet(vase) {
       const arr = []
       for (const f of flowers) {
         if (!f.active) continue
-        for (const m of f.lily.tepalMeshes) {
+        for (const m of f.flower.meshes) {
           m.userData.flowerRef = f
           arr.push(m)
         }

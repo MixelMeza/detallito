@@ -95,25 +95,25 @@ const app = {
   openAll() {
     bouquet.activeFlowers().forEach((f, i) => {
       if (f._bloomTween) f._bloomTween.kill()
-      const proxy = { v: f.lily.bloom }
+      const proxy = { v: f.flower.bloom }
       f._bloomTween = gsap.to(proxy, {
         v: 1,
         duration: 2.2,
         delay: i * 0.07,
         ease: 'power2.out',
-        onUpdate: () => f.lily.setBloom(proxy.v)
+        onUpdate: () => f.flower.setBloom(proxy.v)
       })
     })
   },
   closeAll() {
     bouquet.activeFlowers().forEach((f, i) => {
       if (f._bloomTween) f._bloomTween.kill()
-      const proxy = { v: f.lily.bloom }
+      const proxy = { v: f.flower.bloom }
       f._bloomTween = gsap.to(proxy, {
         v: 0.0,
         duration: 1.4,
         ease: 'power2.inOut',
-        onUpdate: () => f.lily.setBloom(proxy.v)
+        onUpdate: () => f.flower.setBloom(proxy.v)
       })
     })
   }
@@ -214,7 +214,7 @@ function animate() {
   // vaiven suave del ramo (brisa), aplicado sobre la orientacion base
   if (started) {
     bouquet.flowers.forEach((f, i) => {
-      const g = f.lily.group
+      const g = f.flower.group
       const base = g.userData.baseQuat
       if (!base) return
       _sway.setFromEuler(

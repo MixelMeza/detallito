@@ -67,22 +67,30 @@
       </div>
 
       <div class="tabs">
-        <button class="tab active" data-tab="lirios">Lirios</button>
+        <button class="tab active" data-tab="lirios">Flores</button>
         <button class="tab" data-tab="jarron">Jarrón</button>
         <button class="tab" data-tab="tema">Tema</button>
       </div>
 
-      <!-- TAB LIRIOS -->
+      <!-- TAB FLORES -->
       <section class="tab-panel active" data-panel="lirios">
         <label class="field">
-          <span>Color de los lirios</span>
+          <span>Tipo de flor</span>
+          <div class="seg" id="flower-type">
+            <button data-val="lirio" class="active">Lirio</button>
+            <button data-val="tulipan">Tulipán</button>
+            <button data-val="orquidea">Orquídea</button>
+          </div>
+        </label>
+        <label class="field">
+          <span>Color</span>
           <div class="swatches" id="lily-swatches"></div>
         </label>
         <label class="field">
           <span>Color personalizado</span>
           <input type="color" id="lily-color" value="#f2a0c4" />
         </label>
-        <label class="field">
+        <label class="field" id="throat-field">
           <span>Color del centro / garganta</span>
           <input type="color" id="lily-throat" value="#e6f0c2" />
         </label>

@@ -46,17 +46,17 @@ export function setupInteraction({ renderer, camera, bouquet, controls }) {
     }
   }
 
-  function toggleFlower(flower) {
-    if (!flower) return
-    const lily = flower.lily
-    const target = lily.bloom > 0.5 ? 0.0 : 1.0
-    if (flower._bloomTween) flower._bloomTween.kill()
-    const proxy = { v: lily.bloom }
-    flower._bloomTween = gsap.to(proxy, {
+  function toggleFlower(rec) {
+    if (!rec) return
+    const flower = rec.flower
+    const target = flower.bloom > 0.5 ? 0.0 : 1.0
+    if (rec._bloomTween) rec._bloomTween.kill()
+    const proxy = { v: flower.bloom }
+    rec._bloomTween = gsap.to(proxy, {
       v: target,
       duration: target > 0.5 ? 2.6 : 2.0, // apertura lenta y suave
       ease: target > 0.5 ? 'power2.out' : 'power2.inOut',
-      onUpdate: () => lily.setBloom(proxy.v)
+      onUpdate: () => flower.setBloom(proxy.v)
     })
   }
 

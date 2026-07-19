@@ -1,14 +1,9 @@
 import { THEMES, THEME_ORDER } from './themes.js'
+import { FLOWER_TYPES } from './flowers/registry.js'
 
 /*
  * Panel de personalizacion. Cablea los controles del DOM con la app 3D.
  */
-
-const LILY_PRESETS = [
-  '#f2a0c4', '#f7c8dc', '#e56b9a', '#c85a86',
-  '#ffffff', '#ffd27a', '#ff9d5c', '#ff6f6f',
-  '#c86bff', '#8fb3ff', '#b6f5c2', '#ffe08a'
-]
 
 export function setupUI(app) {
   const panel = document.getElementById('panel')
@@ -40,29 +35,38 @@ export function setupUI(app) {
     })
   })
 
-  // --- Swatches de color de lirio ---
   const swatchWrap = document.getElementById('lily-swatches')
   const colorInput = document.getElementById('lily-color')
-  LILY_PRESETS.forEach((hex, i) => {
-    const b = document.createElement('button')
-    b.className = 'swatch' + (i === 0 ? ' active' : '')
-    b.style.background = hex
-    b.addEventListener('click', () => {
-      swatchWrap.querySelectorAll('.swatch').forEach((s) => s.classList.remove('active'))
-      b.classList.add('active')
-      app.bouquet.setPetalColor(hex)
-      colorInput.value = hex
+  const throatField = document.getElementById('throat-field')
+
+  // Repuebla las muestras de color segun el tipo de flor (paleta por tipo)
+  function populateSwatches(type) {
+    const d = FLOWER_TYPES[type].defaults
+    swatchWrap.innerHTML = ''
+    d.presets.forEach((hex) => {
+      const b = document.createElement('button')
+      b.className = 'swatch' + (hex.toLowerCase() === d.color.toLowerCase() ? ' active' : '')
+      b.style.background = hex
+      b.addEventListener('click', () => {
+        swatchWrap.querySelectorAll('.swatch').forEach((s) => s.classList.remove('active'))
+        b.classList.add('active')
+        app.bouquet.setPetalColor(hex)
+        colorInput.value = hex
+      })
+      swatchWrap.appendChild(b)
     })
-    swatchWrap.appendChild(b)
-  })
+    colorInput.value = d.color
+    throatField.style.display = type === 'lirio' ? '' : 'none'
+  }
+  populateSwatches('lirio')
+
   colorInput.addEventListener('input', (e) => {
     app.bouquet.setPetalColor(e.target.value)
     swatchWrap.querySelectorAll('.swatch').forEach((s) => s.classList.remove('active'))
   })
 
-  // --- Color de garganta ---
-  const throat = document.getElementById('lily-throat')
-  throat.addEventListener('change', (e) => app.bouquet.setThroatColor(e.target.value))
+  // --- Color de garganta (solo lirio) ---
+  document.getElementById('lily-throat').addEventListener('change', (e) => app.bouquet.setThroatColor(e.target.value))
 
   // --- Cantidad ---
   const count = document.getElementById('lily-count')
@@ -78,7 +82,7 @@ export function setupUI(app) {
   document.getElementById('open-all').addEventListener('click', () => app.openAll())
   document.getElementById('close-all').addEventListener('click', () => app.closeAll())
 
-  // --- Jarron: forma / material / color ---
+  // --- Segmentos genericos ---
   function wireSegment(id, cb) {
     const seg = document.getElementById(id)
     seg.querySelectorAll('button').forEach((btn) => {
@@ -89,6 +93,14 @@ export function setupUI(app) {
       })
     })
   }
+
+  // --- Tipo de flor ---
+  wireSegment('flower-type', (type) => {
+    app.bouquet.setFlowerType(type)
+    populateSwatches(type)
+  })
+
+  // --- Jarron: forma / material / color ---
   wireSegment('vase-shape', (v) => app.vase.setShape(v))
   wireSegment('vase-material', (v) => app.vase.setMaterial(v))
   document.getElementById('vase-color').addEventListener('input', (e) => app.vase.setColor(e.target.value))

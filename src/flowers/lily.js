@@ -301,6 +301,7 @@ export function createLily({ petalMaterial, seed = 0 }) {
 
   return {
     group,
+    meshes: tepalMeshes,
     tepalMeshes,
     stamenGroup,
     setBloom,
@@ -308,6 +309,16 @@ export function createLily({ petalMaterial, seed = 0 }) {
       return bloom
     }
   }
+}
+
+export const LILY_DEFAULTS = {
+  color: '#f2a0c4',
+  throat: '#e6f0c2',
+  presets: [
+    '#f2a0c4', '#f7c8dc', '#e56b9a', '#c85a86',
+    '#ffffff', '#ffd27a', '#ff9d5c', '#ff6f6f',
+    '#c86bff', '#8fb3ff', '#b6f5c2', '#ffe08a'
+  ]
 }
 
 export function disposeSharedLily() {
