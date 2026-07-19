@@ -9,18 +9,19 @@ import * as THREE from 'three'
  *   trilobulado palido. Mancha basal oscura en la textura.
  */
 
-const U = 18
-const V = 10
+const U = 20
+const V = 12
 const LENGTH = 1.95
-const MAX_WIDTH = 0.66
-const BASE_RADIUS = 0.11
+const MAX_WIDTH = 0.74
+const BASE_RADIUS = 0.1
 const rad = (d) => (d * Math.PI) / 180
 
 function tepalAngle(u, open) {
-  // abierto: cuenco que abre hasta ~72 grados (estrella), sin recurvar
-  if (open) return rad(10 + 64 * Math.pow(u, 1.05))
-  // cerrado: casi vertical, la punta cierra un pelin hacia dentro (huevo)
-  return rad(7 - 9 * u)
+  // abierto: CUENCO redondo y hondo (no estrella plana); la punta apenas se
+  // abre ~50 grados y se redondea, como un tulipan abierto real
+  if (open) return rad(6 + 46 * Math.pow(u, 1.15))
+  // cerrado: huevo liso; las puntas convergen suave hacia dentro
+  return rad(9 - 15 * u)
 }
 
 function smooth01(x) {
@@ -29,9 +30,9 @@ function smooth01(x) {
 }
 
 function tepalWidth(u) {
-  // obovado: garra estrecha en la base, ancho arriba, punta REDONDEADA (roma)
-  const body = Math.pow(Math.sin(Math.PI * (0.12 + 0.76 * u)), 0.5)
-  return MAX_WIDTH * body * smooth01(u / 0.12)
+  // ancho y redondeado (obovado), punta ROMA; ancho pronto para solaparse
+  const body = Math.pow(Math.sin(Math.PI * (0.1 + 0.8 * u)), 0.5)
+  return MAX_WIDTH * body * smooth01(u / 0.08)
 }
 
 function buildPositions(open) {
@@ -46,7 +47,7 @@ function buildPositions(open) {
     cy.push(cy[i - 1] + Math.cos(th) * ds)
     cz.push(cz[i - 1] + Math.sin(th) * ds)
   }
-  const channel = open ? 0.34 : 0.52 // cuenco marcado (forma la copa)
+  const channel = open ? 0.42 : 0.55 // cuenco marcado (forma la copa honda)
   for (let i = 0; i <= U; i++) {
     const u = i / U
     const w = tepalWidth(u)
@@ -121,16 +122,22 @@ export function makeTulipTexture(baseHex = '#d42a2a') {
   ctx.fillStyle = sheen
   ctx.fillRect(0, 0, c.width, c.height)
 
-  // mancha basal oscura en la base (abajo del canvas por flipY = interior/base)
-  const blotch = ctx.createRadialGradient(
-    c.width / 2, c.height, 10,
-    c.width / 2, c.height, c.height * 0.34
-  )
-  blotch.addColorStop(0, 'rgba(20,8,24,0.95)')
-  blotch.addColorStop(0.6, 'rgba(30,10,30,0.75)')
-  blotch.addColorStop(1, 'rgba(30,10,30,0)')
+  // ANILLO AMARILLO alrededor de la mancha (rasgo del tulipan) en la base
+  const cx = c.width / 2
+  const cH = c.height
+  const ring = ctx.createRadialGradient(cx, cH, cH * 0.04, cx, cH, cH * 0.3)
+  ring.addColorStop(0, 'rgba(255,214,64,0.95)')
+  ring.addColorStop(0.62, 'rgba(255,204,48,0.85)')
+  ring.addColorStop(1, 'rgba(255,204,48,0)')
+  ctx.fillStyle = ring
+  ctx.fillRect(0, cH * 0.62, c.width, cH * 0.38)
+  // MANCHA BASAL oscura central encima (casi negra/purpura)
+  const blotch = ctx.createRadialGradient(cx, cH, 6, cx, cH, cH * 0.2)
+  blotch.addColorStop(0, 'rgba(16,6,20,0.98)')
+  blotch.addColorStop(0.7, 'rgba(26,8,26,0.9)')
+  blotch.addColorStop(1, 'rgba(26,8,26,0)')
   ctx.fillStyle = blotch
-  ctx.fillRect(0, c.height * 0.62, c.width, c.height * 0.38)
+  ctx.fillRect(0, cH * 0.68, c.width, cH * 0.32)
 
   const tex = new THREE.CanvasTexture(c)
   tex.colorSpace = THREE.SRGBColorSpace

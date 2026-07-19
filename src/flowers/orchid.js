@@ -8,26 +8,26 @@ import * as THREE from 'three'
  */
 
 const U = 16
-const V = 12
-const LENGTH = 1.55
-const MAX_WIDTH = 0.9
-const BASE_RADIUS = 0.14
+const V = 14
+const LENGTH = 1.5
+const MAX_WIDTH = 1.05
+const BASE_RADIUS = 0.13
 const rad = (d) => (d * Math.PI) / 180
 
 function segAngle(u, open) {
-  // abierto: casi horizontal (cara plana) hasta ~84 grados
-  if (open) return rad(22 + 62 * Math.pow(u, 0.95))
-  // cerrado: segmentos plegados hacia dentro (capullo)
-  return rad(6 - 22 * u)
+  // abierto: cara plana con una leve curvatura hacia el frente (~78 grados)
+  if (open) return rad(20 + 58 * Math.pow(u, 0.92))
+  // cerrado: segmentos plegados formando un capullo redondeado
+  return rad(6 - 24 * u)
 }
 function smooth01(x) {
   x = Math.max(0, Math.min(1, x))
   return x * x * (3 - 2 * x)
 }
 function segWidth(u) {
-  // espatulado: base estrecha, MUY ancho arriba, punta redondeada
-  const body = Math.pow(Math.sin(Math.PI * (0.08 + 0.84 * u)), 0.42)
-  return MAX_WIDTH * body * smooth01(u / 0.1)
+  // ANCHO y REDONDEADO (romo en ambos extremos) para solaparse -> cara llena
+  const body = Math.pow(Math.sin(Math.PI * (0.05 + 0.9 * u)), 0.32)
+  return MAX_WIDTH * body * smooth01(u / 0.05)
 }
 
 function buildPositions(open) {
@@ -42,7 +42,7 @@ function buildPositions(open) {
     cy.push(cy[i - 1] + Math.cos(th) * ds)
     cz.push(cz[i - 1] + Math.sin(th) * ds)
   }
-  const channel = open ? 0.06 : 0.34 // casi plano abierto; plegado cerrado
+  const channel = open ? 0.13 : 0.38 // leve curvatura abierta; plegado cerrado
   for (let i = 0; i <= U; i++) {
     const u = i / U
     const w = segWidth(u)
@@ -121,6 +121,17 @@ export function makeOrchidTexture(baseHex = '#ffffff') {
   g.addColorStop(1, 'rgba(255,255,255,0)')
   ctx.fillStyle = g
   ctx.fillRect(0, c.height * 0.7, c.width, c.height * 0.3)
+  // pecas magenta cerca de la base-centro (garganta manchada tipica)
+  ctx.fillStyle = 'rgba(190,40,120,0.5)'
+  const spots = [
+    [0.5, 0.9, 4], [0.44, 0.86, 3], [0.56, 0.86, 3], [0.48, 0.82, 3],
+    [0.53, 0.82, 3], [0.5, 0.78, 3], [0.42, 0.9, 2], [0.58, 0.9, 2]
+  ]
+  spots.forEach(([sx, sy, r]) => {
+    ctx.beginPath()
+    ctx.ellipse(sx * c.width, sy * c.height, r, r * 1.4, 0, 0, Math.PI * 2)
+    ctx.fill()
+  })
   const tex = new THREE.CanvasTexture(c)
   tex.colorSpace = THREE.SRGBColorSpace
   tex.anisotropy = 4
