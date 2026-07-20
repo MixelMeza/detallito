@@ -164,6 +164,28 @@ export function createBouquet(vase) {
   }
   relax(heads, radii)
 
+  // Separacion por tipo de flor: los tulipanes son estrechos, van MAS JUNTOS
+  // (ramo denso). Escala la posicion horizontal (xz) de cada cabeza hacia el eje.
+  function currentSpread() {
+    return FLOWER_TYPES[flowerType].defaults.spread || 1
+  }
+  function scaledHead(i) {
+    const h = heads[i]
+    const s = currentSpread()
+    return new THREE.Vector3(h.x * s, h.y, h.z * s)
+  }
+  // (Re)construye el tallo de una flor en su posicion segun la separacion actual.
+  function rebuildStem(f) {
+    if (f.stemObj) {
+      group.remove(f.stemObj.stem)
+      f.stemObj.stem.geometry.dispose()
+    }
+    const stemObj = makeStem(scaledHead(f.index), f.meta.az)
+    stemObj.stem.visible = f.active
+    group.add(stemObj.stem)
+    f.stemObj = stemObj
+  }
+
   // Crea (o recrea) la cabeza de flor del tipo actual sobre su tallo.
   function buildHead(f) {
     const { isBud, az } = f.meta
@@ -188,11 +210,9 @@ export function createBouquet(vase) {
   }
 
   for (let i = 0; i < MAX; i++) {
-    const stemObj = makeStem(heads[i], metas[i].az)
-    stemObj.stem.visible = false
-    group.add(stemObj.stem)
-    const f = { stemObj, index: i, active: false, isBud: metas[i].isBud, meta: metas[i] }
+    const f = { stemObj: null, index: i, active: false, isBud: metas[i].isBud, meta: metas[i] }
     flowers.push(f)
+    rebuildStem(f)
     buildHead(f)
   }
 
@@ -317,6 +337,7 @@ export function createBouquet(vase) {
         })
         if (f.material) f.material.dispose()
       }
+      rebuildStem(f) // reposiciona el tallo segun la separacion del nuevo tipo
       buildHead(f)
       if (f.active) {
         const g = f.flower.group
@@ -324,6 +345,11 @@ export function createBouquet(vase) {
         g.scale.copy(g.userData.baseScaleVec)
         g.position.copy(f.stemObj.tip)
         f.flower.setBloom(f.isBud ? 0 : 1)
+        // tallo ya crecido: dibujarlo completo y con sus hojas desplegadas
+        const stem = f.stemObj.stem
+        stem.visible = true
+        stem.geometry.setDrawRange(0, Infinity)
+        for (const lf of f.stemObj.leaves) lf.mesh.scale.setScalar(lf.baseScale)
       }
     }
   }
