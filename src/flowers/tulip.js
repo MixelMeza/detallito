@@ -17,16 +17,19 @@ const rad = (d) => (d * Math.PI) / 180
 // media anchura ANGULAR del tepalo (rad). CERRADO ancho -> los 6 tepalos se
 // solapan en un huevo continuo. ABIERTO mas estrecho -> se SEPARAN y forman una
 // copa (se ve el centro entre ellos), como un tulipan abierto real.
-const ALPHA_CLOSED = 0.66
-const ALPHA_OPEN = 0.6
+// anchura angular AMPLIA en ambos: los 6 tepalos se SOLAPAN y cierran el goblet
+// (sin huecos/hoyo). Igual abierto/cerrado -> superficie continua y lisa.
+const ALPHA_CLOSED = 0.72
+const ALPHA_OPEN = 0.72
 
 function tepalAngle(u, open) {
-  // cerrado: HUEVO/goblet ANCHO -> panza gorda y cierra en la punta
-  const closedDeg = 50 * Math.cos(Math.PI * Math.min(u * 0.9, 1))
+  // cerrado: goblet ANCHO que sube y CIERRA EN PUNTA arriba (los tepalos se
+  // juntan en la punta -> sin hoyo)
+  const closedDeg = 54 * Math.cos(Math.PI * Math.min(u * 0.97, 1))
   if (!open) return rad(closedDeg)
-  // abierto: el MISMO goblet pero abre SOLO la boca (el tercio superior se
-  // separa un poco y se ve el centro), sin desplegarse en estrella
-  const openTop = 38 * smooth01((u - 0.55) / 0.45)
+  // abierto: el goblet ABRE LA BOCA (el tercio superior se ensancha y se ve el
+  // centro), claramente mas abierto que cerrado, pero liso (no estrella)
+  const openTop = 46 * smooth01((u - 0.5) / 0.5)
   return rad(closedDeg + openTop)
 }
 
@@ -35,12 +38,13 @@ function smooth01(x) {
   return x * x * (3 - 2 * x)
 }
 
-// perfil del tepalo: cuerpo ANCHO (obovado) que TERMINA EN PUNTA suave, como el
-// tepalo de un tulipan de verdad (ancho abajo-medio, afilado arriba)
+// perfil del tepalo: cuerpo ANCHO que se afina SUAVE hacia la punta, pero sigue
+// ancho para que los tepalos se SOLAPEN (sin hueco). La punta del goblet la da
+// el perfil (cz->0), no un tepalo estrecho.
 function shapeWidth(u) {
   const rise = smooth01(u / 0.16)
-  const taper = 1 - smooth01((u - 0.66) / 0.34)
-  return rise * (0.12 + 0.88 * taper)
+  const taper = 1 - 0.45 * smooth01((u - 0.7) / 0.3)
+  return rise * taper
 }
 
 function buildPositions(open) {
