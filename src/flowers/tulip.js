@@ -11,7 +11,7 @@ import * as THREE from 'three'
 
 const U = 24
 const V = 16
-const LENGTH = 1.62
+const LENGTH = 1.9 // mas largo (menos gordito)
 const BASE_RADIUS = 0.04
 const rad = (d) => (d * Math.PI) / 180
 // media anchura ANGULAR del tepalo (rad). CERRADO ancho -> los 6 tepalos se
@@ -23,9 +23,9 @@ const ALPHA_CLOSED = 0.72
 const ALPHA_OPEN = 0.72
 
 function tepalAngle(u, open) {
-  // cerrado: goblet ANCHO que sube y CIERRA EN PUNTA arriba (los tepalos se
-  // juntan en la punta -> sin hoyo)
-  const closedDeg = 54 * Math.cos(Math.PI * Math.min(u * 0.97, 1))
+  // cerrado: goblet que sube y CIERRA EN PUNTA arriba (panza mas moderada ->
+  // menos gordito, mas alargado)
+  const closedDeg = 44 * Math.cos(Math.PI * Math.min(u * 0.97, 1))
   if (!open) return rad(closedDeg)
   // abierto: el goblet ABRE LA BOCA (el tercio superior se ensancha y se ve el
   // centro), claramente mas abierto que cerrado, pero liso (no estrella)
@@ -133,10 +133,11 @@ export function makeTulipTexture(baseHex = '#d42a2a') {
   // DEGRADADO vertical: color PLENO en las puntas (arriba del canvas) -> se
   // vuelve PALIDO/blanco hacia la base. Asi es un tulipan real, sea cual sea el color.
   const vgrad = ctx.createLinearGradient(0, 0, 0, c.height)
-  vgrad.addColorStop(0, 'rgba(255,255,255,0)')
-  vgrad.addColorStop(0.42, 'rgba(255,255,255,0)')
-  vgrad.addColorStop(0.72, 'rgba(255,251,244,0.5)')
-  vgrad.addColorStop(0.96, 'rgba(255,252,247,0.85)')
+  vgrad.addColorStop(0, 'rgba(255,255,255,0)') // puntas: color pleno
+  vgrad.addColorStop(0.32, 'rgba(255,255,255,0)')
+  vgrad.addColorStop(0.58, 'rgba(255,253,248,0.6)')
+  vgrad.addColorStop(0.82, 'rgba(255,255,252,0.95)')
+  vgrad.addColorStop(1, 'rgba(255,255,255,1)') // base BLANCA notoria
   ctx.fillStyle = vgrad
   ctx.fillRect(0, 0, c.width, c.height)
 

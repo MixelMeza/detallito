@@ -26,10 +26,11 @@ function smooth01(x) {
   return x * x * (3 - 2 * x)
 }
 function segWidth(u) {
-  // OVALO ancho (moth orchid): garra en la base, cuerpo ancho, punta redondeada.
-  // Distintos (no una bola esponjada) pero solapando un poco.
-  const body = Math.pow(Math.sin(Math.PI * (0.06 + 0.88 * u)), 0.42)
-  return MAX_WIDTH * body * smooth01(u / 0.08)
+  // petalo OVAL que se afina a PUNTA suave -> 5 petalos DISTINTOS (forma de
+  // estrella), no un circulo/bola.
+  const rise = smooth01(u / 0.1)
+  const taper = 1 - 0.6 * smooth01((u - 0.52) / 0.48)
+  return MAX_WIDTH * rise * taper
 }
 
 function buildPositions(open) {
@@ -157,12 +158,15 @@ export const ORCHID_DEFAULTS = {
 }
 
 // 3 sepalos + 2 petalos (alas); los petalos, mas anchos y adyacentes al dorsal
+// Arreglo ASIMETRICO tipo moth orchid: el LABIO ocupa el hueco de abajo (rot 0),
+// los 2 sepalos inferiores lo flanquean bien separados, los 2 petalos-ala arriba
+// a los lados, y el sepalo dorsal opuesto al labio (arriba).
 const SEGMENTS = [
-  { rot: 0, wx: 0.98, wy: 1.02, ph: 0.0 }, // sepalo dorsal (arriba)
-  { rot: 66, wx: 1.28, wy: 1.05, ph: 0.16 }, // petalo (ala/mejilla)
-  { rot: 294, wx: 1.28, wy: 1.05, ph: 0.16 }, // petalo (ala/mejilla)
-  { rot: 140, wx: 1.02, wy: 0.98, ph: 0.08 }, // sepalo lateral
-  { rot: 220, wx: 1.02, wy: 0.98, ph: 0.08 } // sepalo lateral
+  { rot: 180, wx: 1.02, wy: 1.06, ph: 0.0 }, // sepalo dorsal (arriba)
+  { rot: 116, wx: 1.34, wy: 1.06, ph: 0.16 }, // petalo (ala) sup izq
+  { rot: 244, wx: 1.34, wy: 1.06, ph: 0.16 }, // petalo (ala) sup der
+  { rot: 52, wx: 1.06, wy: 1.0, ph: 0.08 }, // sepalo inferior izq (flanquea labio)
+  { rot: 308, wx: 1.06, wy: 1.0, ph: 0.08 } // sepalo inferior der (flanquea labio)
 ]
 
 export function createOrchid({ petalMaterial, seed = 0 }) {

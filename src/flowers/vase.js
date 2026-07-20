@@ -109,7 +109,7 @@ export function createVase() {
     // Molde interior con la FORMA REAL del jarron (perfil algo mas estrecho),
     // oscuro y SIN luz (MeshBasic) -> desde arriba se ve el interior oscuro con
     // fondo plano, como un jarron real; se adapta solo a cada forma.
-    const darkMat = new THREE.MeshBasicMaterial({ color: 0x1e1a17, side: THREE.DoubleSide })
+    const darkMat = new THREE.MeshBasicMaterial({ color: 0x342f28, side: THREE.DoubleSide })
     // fondo SOLIDO y elevado (no llega al suelo) -> tapa lo de abajo y evita el
     // z-fighting con la sombra del suelo (eso era "lo raro" del centro).
     const yMin = 0.32
