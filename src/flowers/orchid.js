@@ -9,9 +9,9 @@ import * as THREE from 'three'
 
 const U = 16
 const V = 16
-const LENGTH = 1.42
-const MAX_WIDTH = 1.32
-const BASE_RADIUS = 0.12
+const LENGTH = 1.5
+const MAX_WIDTH = 1.08
+const BASE_RADIUS = 0.1
 const rad = (d) => (d * Math.PI) / 180
 
 function segAngle(u, open) {
@@ -25,10 +25,10 @@ function smooth01(x) {
   return x * x * (3 - 2 * x)
 }
 function segWidth(u) {
-  // ancho, redondeado y LISO (romo en ambos extremos) -> pétalos que se solapan
-  // en una cara llena, sin bordes facetados/en pua
-  const body = Math.pow(Math.sin(Math.PI * (0.05 + 0.9 * u)), 0.28)
-  return MAX_WIDTH * body * smooth01(u / 0.06)
+  // OVALO ancho (moth orchid): garra en la base, cuerpo ancho, punta redondeada.
+  // Distintos (no una bola esponjada) pero solapando un poco.
+  const body = Math.pow(Math.sin(Math.PI * (0.06 + 0.88 * u)), 0.42)
+  return MAX_WIDTH * body * smooth01(u / 0.08)
 }
 
 function buildPositions(open) {
@@ -43,7 +43,7 @@ function buildPositions(open) {
     cy.push(cy[i - 1] + Math.cos(th) * ds)
     cz.push(cz[i - 1] + Math.sin(th) * ds)
   }
-  const channel = open ? 0.18 : 0.52 // leve cuenco abierto (con forma); envuelve el capullo
+  const channel = open ? 0.05 : 0.52 // cara PLANA abierta (moth orchid); envuelve el capullo
   for (let i = 0; i <= U; i++) {
     const u = i / U
     const w = segWidth(u)
@@ -157,11 +157,11 @@ export const ORCHID_DEFAULTS = {
 
 // 3 sepalos + 2 petalos (alas); los petalos, mas anchos y adyacentes al dorsal
 const SEGMENTS = [
-  { rot: 0, wx: 1.06, wy: 1.0, ph: 0.0 }, // sepalo dorsal (arriba)
-  { rot: 68, wx: 1.5, wy: 1.08, ph: 0.18 }, // petalo (ala) grande
-  { rot: 292, wx: 1.5, wy: 1.08, ph: 0.18 }, // petalo (ala) grande
-  { rot: 142, wx: 1.18, wy: 0.96, ph: 0.08 }, // sepalo lateral
-  { rot: 218, wx: 1.18, wy: 0.96, ph: 0.08 } // sepalo lateral
+  { rot: 0, wx: 0.98, wy: 1.02, ph: 0.0 }, // sepalo dorsal (arriba)
+  { rot: 66, wx: 1.28, wy: 1.05, ph: 0.16 }, // petalo (ala/mejilla)
+  { rot: 294, wx: 1.28, wy: 1.05, ph: 0.16 }, // petalo (ala/mejilla)
+  { rot: 140, wx: 1.02, wy: 0.98, ph: 0.08 }, // sepalo lateral
+  { rot: 220, wx: 1.02, wy: 0.98, ph: 0.08 } // sepalo lateral
 ]
 
 export function createOrchid({ petalMaterial, seed = 0 }) {

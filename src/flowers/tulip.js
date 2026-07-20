@@ -20,8 +20,8 @@ const rad = (d) => (d * Math.PI) / 180
 
 function tepalAngle(u, open) {
   // el perfil (radio vs altura) define la forma; los tepalos lo envuelven
-  // abierto: BOL/copa redonda (abre desde la base, vuela poco en la punta)
-  if (open) return rad(22 + 30 * Math.pow(u, 0.9))
+  // abierto: COPA de petalos ANCHOS (miras dentro y ves el centro oscuro)
+  if (open) return rad(18 + 26 * Math.pow(u, 0.9))
   // cerrado: HUEVO -> panza y cierra en la punta
   return rad(40 * Math.cos(Math.PI * Math.min(u * 0.93, 1)))
 }
@@ -31,10 +31,11 @@ function smooth01(x) {
   return x * x * (3 - 2 * x)
 }
 
-// perfil obovado 0..1 (garra en la base, ancho en la panza, punta roma)
+// perfil obovado 0..1: garra en la base, ANCHO hasta arriba con punta ROMA
+// (petalo ancho de tulipan, no estrecho/puntiagudo)
 function shapeWidth(u) {
-  const rise = smooth01(u / 0.16)
-  const roundTip = 1 - 0.5 * smooth01((u - 0.82) / 0.18)
+  const rise = smooth01(u / 0.14)
+  const roundTip = 1 - 0.3 * smooth01((u - 0.85) / 0.15)
   return rise * roundTip
 }
 
