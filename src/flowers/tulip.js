@@ -11,19 +11,20 @@ import * as THREE from 'three'
 
 const U = 24
 const V = 16
-const LENGTH = 1.9
+const LENGTH = 1.62
 const BASE_RADIUS = 0.04
-// media anchura ANGULAR del tepalo (rad): 6 tepalos * 2*ALPHA ~ 360 -> envuelven
-// la flor formando una superficie continua (copa/huevo) que se abraza
-const ALPHA_MAX = 0.62
 const rad = (d) => (d * Math.PI) / 180
+// media anchura ANGULAR del tepalo (rad). CERRADO ancho -> los 6 tepalos se
+// solapan en un huevo continuo. ABIERTO mas estrecho -> se SEPARAN y forman una
+// copa (se ve el centro entre ellos), como un tulipan abierto real.
+const ALPHA_CLOSED = 0.66
+const ALPHA_OPEN = 0.45
 
 function tepalAngle(u, open) {
-  // el perfil (radio vs altura) define la forma; los tepalos lo envuelven
-  // abierto: COPA de petalos ANCHOS (miras dentro y ves el centro oscuro)
-  if (open) return rad(18 + 26 * Math.pow(u, 0.9))
-  // cerrado: HUEVO -> panza y cierra en la punta
-  return rad(40 * Math.cos(Math.PI * Math.min(u * 0.93, 1)))
+  // abierto: sube y abre en COPA (los petalos se separan)
+  if (open) return rad(40 * Math.sin(Math.PI * Math.min(u * 0.72, 1)))
+  // cerrado: HUEVO/goblet ANCHO -> panza gorda y cierra en la punta
+  return rad(50 * Math.cos(Math.PI * Math.min(u * 0.9, 1)))
 }
 
 function smooth01(x) {
@@ -53,9 +54,10 @@ function buildPositions(open) {
   }
   // cada punto se ENVUELVE en un arco de radio cz alrededor del eje -> el tepalo
   // es un trozo de la superficie de la flor (copa/huevo), no una lamina plana
+  const alphaMax = open ? ALPHA_OPEN : ALPHA_CLOSED
   for (let i = 0; i <= U; i++) {
     const u = i / U
-    const alpha = ALPHA_MAX * shapeWidth(u)
+    const alpha = alphaMax * shapeWidth(u)
     const r = cz[i]
     for (let j = 0; j <= V; j++) {
       const v = (j / V) * 2 - 1

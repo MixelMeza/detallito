@@ -15,8 +15,9 @@ const BASE_RADIUS = 0.1
 const rad = (d) => (d * Math.PI) / 180
 
 function segAngle(u, open) {
-  // abierto: cara plana con una leve curvatura hacia el frente (~78 grados)
-  if (open) return rad(20 + 58 * Math.pow(u, 0.92))
+  // abierto: los segmentos salen CASI HORIZONTALES desde la base -> cara PLANA
+  // (no embudo). Leve dishing hacia el frente.
+  if (open) return rad(72 + 15 * u)
   // cerrado: TEARDROP alargado -> panza baja y cierra en punta suave arriba
   return rad(27 * Math.cos(Math.PI * Math.min(u * 0.96, 1)))
 }
