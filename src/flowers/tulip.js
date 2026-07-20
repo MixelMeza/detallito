@@ -9,67 +9,77 @@ import * as THREE from 'three'
  *   trilobulado palido. Mancha basal oscura en la textura.
  */
 
-const U = 24
-const V = 16
-const LENGTH = 1.9 // mas largo (menos gordito)
-const BASE_RADIUS = 0.04
+const U = 28
+const V = 20
+const LENGTH = 2.0 // largo del tepalo (altura de la flor)
+const BASE_RADIUS = 0.05
+const MAXR = 0.5 // radio maximo de la flor (unidades de mundo)
 const rad = (d) => (d * Math.PI) / 180
-// media anchura ANGULAR del tepalo (rad). CERRADO ancho -> los 6 tepalos se
-// solapan en un huevo continuo. ABIERTO mas estrecho -> se SEPARAN y forman una
-// copa (se ve el centro entre ellos), como un tulipan abierto real.
-// anchura angular AMPLIA en ambos: los 6 tepalos se SOLAPAN y cierran el goblet
-// (sin huecos/hoyo). Igual abierto/cerrado -> superficie continua y lisa.
-const ALPHA_CLOSED = 0.72
-const ALPHA_OPEN = 0.72
-
-function tepalAngle(u, open) {
-  // cerrado: goblet que sube y CIERRA EN PUNTA arriba (panza mas moderada ->
-  // menos gordito, mas alargado)
-  const closedDeg = 44 * Math.cos(Math.PI * Math.min(u * 0.97, 1))
-  if (!open) return rad(closedDeg)
-  // abierto: el goblet ABRE LA BOCA (el tercio superior se ensancha y se ve el
-  // centro), claramente mas abierto que cerrado, pero liso (no estrella)
-  const openTop = 46 * smooth01((u - 0.5) / 0.5)
-  return rad(closedDeg + openTop)
-}
 
 function smooth01(x) {
   x = Math.max(0, Math.min(1, x))
   return x * x * (3 - 2 * x)
 }
 
-// perfil del tepalo: cuerpo ANCHO que se afina SUAVE hacia la punta, pero sigue
-// ancho para que los tepalos se SOLAPEN (sin hueco). La punta del goblet la da
-// el perfil (cz->0), no un tepalo estrecho.
-function shapeWidth(u) {
-  const rise = smooth01(u / 0.16)
-  const taper = 1 - 0.45 * smooth01((u - 0.7) / 0.3)
-  return rise * taper
+// Media anchura ANGULAR del tepalo (rad). El tulipan tiene 6 tepalos; con
+// ~32 grados de medio-ancho (0.56 rad) los 6 se SOLAPAN (6*2*32=384>360) y
+// cierran la superficie -> sin muescas/dientes en la cima.
+// medio-ancho angular por estado. Abierto usa MAS ancho para que la copa siga
+// LLENA (tepalos solapados, borde apenas ondulado) en vez de dientes separados.
+const ALPHA_CLOSED = 0.62
+const ALPHA_OPEN = 0.72
+function tepalWidth(u, open) {
+  const rise = smooth01(u / 0.12) // nace estrecho del receptaculo
+  if (!open) {
+    // cerrado: ANCHO y casi constante -> los tepalos se solapan; la cima cierra
+    // sola porque el radio del meridiano tiende a 0 arriba (domo redondeado)
+    return rise * (1 - 0.12 * smooth01((u - 0.8) / 0.2))
+  }
+  // abierto: se afina SUAVE hacia la punta -> copa llena con borde ondulado
+  // (6 puntas redondeadas visibles), no dientes en V muy separados
+  return rise * (1 - 0.3 * smooth01((u - 0.5) / 0.5))
+}
+
+// Meridiano (radio, altura) del tepalo. CLAVE del arreglo: la CIMA es
+// REDONDEADA (perfil tipo raiz cuadrada -> domo, como el top de un circulo),
+// NUNCA una punta afilada. Antes se integraba un angulo que formaba un cono.
+const CLOSED_NORM = (() => {
+  let m = 1e-6
+  for (let i = 0; i <= 200; i++) {
+    const u = i / 200
+    const r = Math.pow(u, 0.85) * Math.pow(1 - u, 0.55)
+    if (r > m) m = r
+  }
+  return m
+})()
+function meridian(u, open) {
+  const y = LENGTH * u
+  // HUEVO: estrecho en la base, panza en el tercio superior (u~0.6), y CIMA
+  // REDONDEADA. (1-u)^0.55 hace que arriba el perfil se doble en domo (no punta).
+  const egg = (MAXR * Math.pow(u, 0.85) * Math.pow(1 - u, 0.55)) / CLOSED_NORM
+  if (!open) return { r: Math.max(BASE_RADIUS, egg), y }
+  // ABIERTO: COPA -> boca tan ancha como la panza del capullo (no un cuenco
+  // plano). La base igual que cerrado y el borde REDONDEADO (no afilado).
+  const cup = MAXR * 0.98 * Math.pow(u, 0.62)
+  const tipRound = 1 - 0.14 * smooth01((u - 0.82) / 0.18)
+  const mix = smooth01((u - 0.12) / 0.6)
+  const r = (egg * (1 - mix) + cup * mix) * tipRound
+  return { r: Math.max(BASE_RADIUS, r), y }
 }
 
 function buildPositions(open) {
   const positions = []
   const uvs = []
-  const cy = [0]
-  const cz = [BASE_RADIUS]
-  const ds = LENGTH / U
-  for (let i = 1; i <= U; i++) {
-    const uMid = (i - 0.5) / U
-    const th = tepalAngle(uMid, open)
-    cy.push(cy[i - 1] + Math.cos(th) * ds)
-    cz.push(cz[i - 1] + Math.sin(th) * ds)
-  }
-  // cada punto se ENVUELVE en un arco de radio cz alrededor del eje -> el tepalo
-  // es un trozo de la superficie de la flor (copa/huevo), no una lamina plana
-  const alphaMax = open ? ALPHA_OPEN : ALPHA_CLOSED
   for (let i = 0; i <= U; i++) {
     const u = i / U
-    const alpha = alphaMax * shapeWidth(u)
-    const r = cz[i]
+    const { r, y } = meridian(u, open)
+    const alpha = (open ? ALPHA_OPEN : ALPHA_CLOSED) * tepalWidth(u, open)
+    // cada fila se ENVUELVE en un arco de radio r -> el tepalo es un trozo de la
+    // superficie de la copa/huevo (no una lamina plana)
     for (let j = 0; j <= V; j++) {
       const v = (j / V) * 2 - 1
       const th = v * alpha
-      positions.push(r * Math.sin(th), cy[i], r * Math.cos(th))
+      positions.push(r * Math.sin(th), y, r * Math.cos(th))
       uvs.push((v + 1) / 2, u)
     }
   }
