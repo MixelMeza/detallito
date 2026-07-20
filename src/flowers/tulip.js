@@ -35,12 +35,12 @@ function smooth01(x) {
   return x * x * (3 - 2 * x)
 }
 
-// perfil obovado 0..1: garra en la base, ANCHO hasta arriba con punta ROMA
-// (petalo ancho de tulipan, no estrecho/puntiagudo)
+// perfil del tepalo: cuerpo ANCHO (obovado) que TERMINA EN PUNTA suave, como el
+// tepalo de un tulipan de verdad (ancho abajo-medio, afilado arriba)
 function shapeWidth(u) {
-  const rise = smooth01(u / 0.14)
-  const roundTip = 1 - 0.3 * smooth01((u - 0.85) / 0.15)
-  return rise * roundTip
+  const rise = smooth01(u / 0.16)
+  const taper = 1 - smooth01((u - 0.66) / 0.34)
+  return rise * (0.12 + 0.88 * taper)
 }
 
 function buildPositions(open) {
@@ -124,6 +124,16 @@ export function makeTulipTexture(baseHex = '#d42a2a') {
   sheen.addColorStop(0.5, 'rgba(255,255,255,0.14)')
   sheen.addColorStop(1, 'rgba(0,0,0,0.12)')
   ctx.fillStyle = sheen
+  ctx.fillRect(0, 0, c.width, c.height)
+
+  // DEGRADADO vertical: color PLENO en las puntas (arriba del canvas) -> se
+  // vuelve PALIDO/blanco hacia la base. Asi es un tulipan real, sea cual sea el color.
+  const vgrad = ctx.createLinearGradient(0, 0, 0, c.height)
+  vgrad.addColorStop(0, 'rgba(255,255,255,0)')
+  vgrad.addColorStop(0.42, 'rgba(255,255,255,0)')
+  vgrad.addColorStop(0.72, 'rgba(255,251,244,0.5)')
+  vgrad.addColorStop(0.96, 'rgba(255,252,247,0.85)')
+  ctx.fillStyle = vgrad
   ctx.fillRect(0, 0, c.width, c.height)
 
   // ANILLO AMARILLO alrededor de la mancha (rasgo del tulipan) en la base
