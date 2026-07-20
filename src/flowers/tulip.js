@@ -18,13 +18,16 @@ const rad = (d) => (d * Math.PI) / 180
 // solapan en un huevo continuo. ABIERTO mas estrecho -> se SEPARAN y forman una
 // copa (se ve el centro entre ellos), como un tulipan abierto real.
 const ALPHA_CLOSED = 0.66
-const ALPHA_OPEN = 0.45
+const ALPHA_OPEN = 0.6
 
 function tepalAngle(u, open) {
-  // abierto: sube y abre en COPA (los petalos se separan)
-  if (open) return rad(40 * Math.sin(Math.PI * Math.min(u * 0.72, 1)))
   // cerrado: HUEVO/goblet ANCHO -> panza gorda y cierra en la punta
-  return rad(50 * Math.cos(Math.PI * Math.min(u * 0.9, 1)))
+  const closedDeg = 50 * Math.cos(Math.PI * Math.min(u * 0.9, 1))
+  if (!open) return rad(closedDeg)
+  // abierto: el MISMO goblet pero abre SOLO la boca (el tercio superior se
+  // separa un poco y se ve el centro), sin desplegarse en estrella
+  const openTop = 38 * smooth01((u - 0.55) / 0.45)
+  return rad(closedDeg + openTop)
 }
 
 function smooth01(x) {
@@ -157,7 +160,8 @@ const OPEN_TINT = new THREE.Color('#ffffff')
 
 export const TULIP_DEFAULTS = {
   color: '#d42a2a',
-  presets: ['#d42a2a', '#f0a500', '#ffd23f', '#ff7ab0', '#ffffff', '#8e3bd6']
+  presets: ['#d42a2a', '#f0a500', '#ffd23f', '#ff7ab0', '#ffffff', '#8e3bd6'],
+  sizeScale: 1.25 // un poco mas grandes que lirio/orquidea
 }
 
 export function createTulip({ petalMaterial, seed = 0 }) {

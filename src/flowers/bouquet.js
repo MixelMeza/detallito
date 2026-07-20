@@ -166,7 +166,8 @@ export function createBouquet(vase) {
 
   // Crea (o recrea) la cabeza de flor del tipo actual sobre su tallo.
   function buildHead(f) {
-    const { isBud, scale, az } = f.meta
+    const { isBud, az } = f.meta
+    const scale = f.meta.scale * (FLOWER_TYPES[flowerType].defaults.sizeScale || 1)
     const mat = makePetalMaterial()
     const flower = FLOWER_TYPES[flowerType].create({ petalMaterial: mat, seed: f.index + 1 })
     f.flower = flower
