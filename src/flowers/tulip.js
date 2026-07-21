@@ -11,9 +11,12 @@ import * as THREE from 'three'
 
 const U = 28
 const V = 20
-const LENGTH = 2.0 // largo del tepalo (altura de la flor)
+const LENGTH = 1.85 // alto de la flor. Con MAXR 0.6 -> diametro ~1.2 => ratio ~1.6:1
 const BASE_RADIUS = 0.05
-const MAXR = 0.5 // radio maximo de la flor (unidades de mundo)
+const MAXR = 0.6 // radio maximo de la flor -> mas RECHONCHA (como el morado real)
+// exponentes del huevo: base estrecha (A) y hombros llenos + cima ROMA (B bajo)
+const EGG_A = 0.7
+const EGG_B = 0.45
 const rad = (d) => (d * Math.PI) / 180
 
 function smooth01(x) {
@@ -26,18 +29,17 @@ function smooth01(x) {
 // cierran la superficie -> sin muescas/dientes en la cima.
 // medio-ancho angular por estado. Abierto usa MAS ancho para que la copa siga
 // LLENA (tepalos solapados, borde apenas ondulado) en vez de dientes separados.
-const ALPHA_CLOSED = 0.64
-const ALPHA_OPEN = 0.58
+// SOLAPE FUERTE en ambos estados: 6 tepalos * 2 * ~41 grados = 492 > 360 -> se
+// solapan de sobra y NUNCA dejan huecos/cuñas blancas (ese era el gran defecto).
+// CERRADO: solape fuerte (sin huecos, huevo liso). ABIERTO: algo mas estrecho
+// para que las puntas se SEPAREN al evertirse (se ve el centro), pero el interior
+// ahora es de color saturado -> las separaciones muestran color, no cuñas blancas.
+const ALPHA_CLOSED = 0.72
+const ALPHA_OPEN = 0.6
 function tepalWidth(u, open) {
   const rise = smooth01(u / 0.12) // nace estrecho del receptaculo
-  if (!open) {
-    // cerrado: ANCHO y casi constante -> los tepalos se solapan; la cima cierra
-    // sola porque el radio del meridiano tiende a 0 arriba (domo redondeado)
-    return rise * (1 - 0.12 * smooth01((u - 0.8) / 0.2))
-  }
-  // abierto: se afina hacia la punta -> las puntas se SEPARAN un poco (dejan ver
-  // el centro) y quedan REDONDEADAS, pero el cuerpo sigue solapado (sin dientes)
-  return rise * (1 - 0.4 * smooth01((u - 0.45) / 0.55))
+  const tipTaper = open ? 0.35 : 0.1
+  return rise * (1 - tipTaper * smooth01((u - 0.62) / 0.38))
 }
 
 // Meridiano (radio, altura) del tepalo. CLAVE del arreglo: la CIMA es
@@ -47,25 +49,22 @@ const CLOSED_NORM = (() => {
   let m = 1e-6
   for (let i = 0; i <= 200; i++) {
     const u = i / 200
-    const r = Math.pow(u, 0.85) * Math.pow(1 - u, 0.55)
+    const r = Math.pow(u, EGG_A) * Math.pow(1 - u, EGG_B)
     if (r > m) m = r
   }
   return m
 })()
 function meridian(u, open) {
   const y = LENGTH * u
-  // HUEVO: estrecho en la base, panza en el tercio superior (u~0.6), y CIMA
-  // REDONDEADA. (1-u)^0.55 hace que arriba el perfil se doble en domo (no punta).
-  const egg = (MAXR * Math.pow(u, 0.85) * Math.pow(1 - u, 0.55)) / CLOSED_NORM
+  // HUEVO rechoncho: base estrecha, hombros LLENOS en el tercio superior, y CIMA
+  // ROMA/redondeada. (1-u)^0.45 dobla el perfil en domo arriba (nunca punta).
+  const egg = (MAXR * Math.pow(u, EGG_A) * Math.pow(1 - u, EGG_B)) / CLOSED_NORM
   if (!open) return { r: Math.max(BASE_RADIUS, egg), y }
-  // ABIERTO: el mismo HUEVO que apenas se ENTREABRE arriba. NO es un embudo:
-  // conserva la panza; la BOCA (arriba) es mas ESTRECHA que la panza (las puntas
-  // aun curvan hacia adentro), solo que no cierran del todo -> se ve el centro.
-  // Las puntas ceden un pelin hacia afuera (leve recurva) y quedan redondeadas.
-  const mouth = MAXR * 0.24 * smooth01((u - 0.5) / 0.5) // boca entreabierta
-  const tipOut = MAXR * 0.08 * smooth01((u - 0.82) / 0.18) // leve recurva de la punta
-  // se acorta un poco al abrir (la flor baja al entreabrir)
-  const drop = 0.14 * smooth01((u - 0.5) / 0.5)
+  // ABIERTO: copa. La mitad superior se EVIERTE hacia afuera (las puntas se
+  // abren y separan un poco -> se ve el centro), pero el cuerpo sigue solapado.
+  const mouth = MAXR * 0.44 * smooth01((u - 0.42) / 0.58) // boca se abre
+  const tipOut = MAXR * 0.12 * smooth01((u - 0.75) / 0.25) // puntas apenas evertidas
+  const drop = 0.16 * smooth01((u - 0.45) / 0.55) // se acorta al abrir
   return { r: Math.max(BASE_RADIUS, Math.max(egg, mouth) + tipOut), y: y - drop }
 }
 
@@ -142,39 +141,49 @@ export function makeTulipTexture(baseHex = '#d42a2a') {
   ctx.fillStyle = sheen
   ctx.fillRect(0, 0, c.width, c.height)
 
-  // DEGRADADO vertical: color PLENO en las puntas (arriba del canvas) -> se
-  // vuelve PALIDO/blanco hacia la base. Asi es un tulipan real, sea cual sea el color.
+  // DEGRADADO vertical SUTIL: color SATURADO casi entero (como el morado/rojo
+  // real); solo el tercio inferior se aclara un POCO (no a blanco). Antes se iba
+  // a blanco puro y quedaba lavado -> ese era parte del problema.
   const vgrad = ctx.createLinearGradient(0, 0, 0, c.height)
   vgrad.addColorStop(0, 'rgba(255,255,255,0)') // puntas: color pleno
-  vgrad.addColorStop(0.32, 'rgba(255,255,255,0)')
-  vgrad.addColorStop(0.58, 'rgba(255,253,248,0.6)')
-  vgrad.addColorStop(0.82, 'rgba(255,255,252,0.95)')
-  vgrad.addColorStop(1, 'rgba(255,255,255,1)') // base BLANCA notoria
+  vgrad.addColorStop(0.62, 'rgba(255,255,255,0)') // sigue pleno
+  vgrad.addColorStop(0.85, 'rgba(255,250,245,0.2)') // apenas se aclara
+  vgrad.addColorStop(1, 'rgba(255,248,240,0.4)') // base algo mas clara, NO blanca
   ctx.fillStyle = vgrad
   ctx.fillRect(0, 0, c.width, c.height)
 
-  // ANILLO AMARILLO alrededor de la mancha (rasgo del tulipan) en la base
+  // ANILLO AMARILLO + MANCHA basal: rasgos del INTERIOR. Muy CONTENIDOS y BAJOS
+  // (bottom ~10%) para que queden ocultos por el receptaculo y NO asomen fuera.
   const cx = c.width / 2
   const cH = c.height
-  const ring = ctx.createRadialGradient(cx, cH, cH * 0.04, cx, cH, cH * 0.3)
-  ring.addColorStop(0, 'rgba(255,214,64,0.95)')
-  ring.addColorStop(0.62, 'rgba(255,204,48,0.85)')
+  const ring = ctx.createRadialGradient(cx, cH, cH * 0.02, cx, cH, cH * 0.14)
+  ring.addColorStop(0, 'rgba(255,214,64,0.9)')
+  ring.addColorStop(0.7, 'rgba(255,204,48,0.6)')
   ring.addColorStop(1, 'rgba(255,204,48,0)')
   ctx.fillStyle = ring
-  ctx.fillRect(0, cH * 0.62, c.width, cH * 0.38)
-  // MANCHA BASAL oscura central encima (casi negra/purpura), mas contenida
-  const blotch = ctx.createRadialGradient(cx, cH * 0.97, 4, cx, cH * 0.97, cH * 0.15)
-  blotch.addColorStop(0, 'rgba(16,6,20,0.98)')
-  blotch.addColorStop(0.7, 'rgba(26,8,26,0.85)')
+  ctx.fillRect(0, cH * 0.8, c.width, cH * 0.2)
+  const blotch = ctx.createRadialGradient(cx, cH * 0.99, 3, cx, cH * 0.99, cH * 0.09)
+  blotch.addColorStop(0, 'rgba(16,6,20,0.95)')
+  blotch.addColorStop(0.7, 'rgba(26,8,26,0.7)')
   blotch.addColorStop(1, 'rgba(26,8,26,0)')
   ctx.fillStyle = blotch
-  ctx.fillRect(0, cH * 0.78, c.width, cH * 0.22)
+  ctx.fillRect(0, cH * 0.9, c.width, cH * 0.1)
   // BASE VERDE en el borde inferior (donde el tepalo nace del tallo)
-  const greenBase = ctx.createLinearGradient(0, cH, 0, cH * 0.9)
-  greenBase.addColorStop(0, 'rgba(110,165,74,0.95)')
+  const greenBase = ctx.createLinearGradient(0, cH, 0, cH * 0.92)
+  greenBase.addColorStop(0, 'rgba(110,165,74,0.9)')
   greenBase.addColorStop(1, 'rgba(110,165,74,0)')
   ctx.fillStyle = greenBase
-  ctx.fillRect(0, cH * 0.9, c.width, cH * 0.1)
+  ctx.fillRect(0, cH * 0.92, c.width, cH * 0.08)
+
+  // ENRIQUECER el color (multiply): la luz/reflejo lavaban el rojo a coral.
+  // Multiply con el propio color profundiza la saturacion; en los claros (base
+  // palida/blanca) casi no hace nada -> funciona para cualquier color.
+  ctx.globalCompositeOperation = 'multiply'
+  ctx.globalAlpha = 0.3
+  ctx.fillStyle = baseHex
+  ctx.fillRect(0, 0, c.width, cH * 0.72) // solo el cuerpo de color, no la base clara
+  ctx.globalAlpha = 1
+  ctx.globalCompositeOperation = 'source-over'
 
   const tex = new THREE.CanvasTexture(c)
   tex.colorSpace = THREE.SRGBColorSpace

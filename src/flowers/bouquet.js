@@ -48,8 +48,8 @@ export function createBouquet(vase) {
       roughness: 0.5,
       metalness: 0.0,
       side: THREE.DoubleSide,
-      sheen: 0.35,
-      sheenColor: new THREE.Color('#ffd9e6'),
+      sheen: 0.28,
+      sheenColor: new THREE.Color('#ffffff'), // NEUTRO: el rosa lavaba el rojo a coral
       sheenRoughness: 0.6,
       // sin transmision: petalo opaco y mejor rendimiento en movil
       transmission: 0.0,
