@@ -124,6 +124,15 @@ function hash(n) {
   return x - Math.floor(x)
 }
 
+// hex "#rrggbb" -> "rgba(r,g,b,a)" (para degradados con el color del petalo)
+function hexA(hex, a) {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.substring(0, 2), 16)
+  const g = parseInt(h.substring(2, 4), 16)
+  const b = parseInt(h.substring(4, 6), 16)
+  return `rgba(${r},${g},${b},${a})`
+}
+
 // Textura: tepalo de color pleno + MANCHA BASAL oscura (rasgo del tulipan)
 export function makeTulipTexture(baseHex = '#d42a2a') {
   const c = document.createElement('canvas')
@@ -133,13 +142,27 @@ export function makeTulipTexture(baseHex = '#d42a2a') {
   ctx.fillStyle = baseHex
   ctx.fillRect(0, 0, c.width, c.height)
 
-  // ligero brillo (centro un poco mas claro a lo largo)
+  // MODELADO del tepalo a lo ancho: centro abombado (mas claro) y BORDES en
+  // sombra -> define cada tepalo redondeado y marca la COSTURA de solape con el
+  // vecino. Mas contraste que antes = tepalos mas definidos (menos "globo liso").
   const sheen = ctx.createLinearGradient(0, 0, c.width, 0)
-  sheen.addColorStop(0, 'rgba(0,0,0,0.12)')
-  sheen.addColorStop(0.5, 'rgba(255,255,255,0.14)')
-  sheen.addColorStop(1, 'rgba(0,0,0,0.12)')
+  sheen.addColorStop(0.0, 'rgba(0,0,0,0.34)') // costura (borde del tepalo) en sombra
+  sheen.addColorStop(0.12, 'rgba(0,0,0,0.14)')
+  sheen.addColorStop(0.5, 'rgba(255,255,255,0.16)') // lomo del tepalo iluminado
+  sheen.addColorStop(0.88, 'rgba(0,0,0,0.14)')
+  sheen.addColorStop(1.0, 'rgba(0,0,0,0.34)')
   ctx.fillStyle = sheen
   ctx.fillRect(0, 0, c.width, c.height)
+
+  // VENAS longitudinales sutiles (dos a cada lado del lomo) -> textura de petalo
+  ctx.strokeStyle = 'rgba(0,0,0,0.06)'
+  ctx.lineWidth = 1.5
+  for (const fx of [0.3, 0.7]) {
+    ctx.beginPath()
+    ctx.moveTo(c.width * fx, c.height * 0.06)
+    ctx.lineTo(c.width * fx, c.height * 0.92)
+    ctx.stroke()
+  }
 
   // DEGRADADO vertical SUTIL: color SATURADO casi entero (como el morado/rojo
   // real); solo el tercio inferior se aclara un POCO (no a blanco). Antes se iba
@@ -156,18 +179,18 @@ export function makeTulipTexture(baseHex = '#d42a2a') {
   // (bottom ~10%) para que queden ocultos por el receptaculo y NO asomen fuera.
   const cx = c.width / 2
   const cH = c.height
-  const ring = ctx.createRadialGradient(cx, cH, cH * 0.02, cx, cH, cH * 0.14)
-  ring.addColorStop(0, 'rgba(255,214,64,0.9)')
-  ring.addColorStop(0.7, 'rgba(255,204,48,0.6)')
+  const ring = ctx.createRadialGradient(cx, cH, cH * 0.01, cx, cH, cH * 0.1)
+  ring.addColorStop(0, 'rgba(255,214,64,0.85)')
+  ring.addColorStop(0.7, 'rgba(255,204,48,0.5)')
   ring.addColorStop(1, 'rgba(255,204,48,0)')
   ctx.fillStyle = ring
-  ctx.fillRect(0, cH * 0.8, c.width, cH * 0.2)
-  const blotch = ctx.createRadialGradient(cx, cH * 0.99, 3, cx, cH * 0.99, cH * 0.09)
+  ctx.fillRect(0, cH * 0.86, c.width, cH * 0.14)
+  const blotch = ctx.createRadialGradient(cx, cH * 1.0, 2, cx, cH * 1.0, cH * 0.07)
   blotch.addColorStop(0, 'rgba(16,6,20,0.95)')
   blotch.addColorStop(0.7, 'rgba(26,8,26,0.7)')
   blotch.addColorStop(1, 'rgba(26,8,26,0)')
   ctx.fillStyle = blotch
-  ctx.fillRect(0, cH * 0.9, c.width, cH * 0.1)
+  ctx.fillRect(0, cH * 0.93, c.width, cH * 0.07)
   // BASE VERDE en el borde inferior (donde el tepalo nace del tallo)
   const greenBase = ctx.createLinearGradient(0, cH, 0, cH * 0.92)
   greenBase.addColorStop(0, 'rgba(110,165,74,0.9)')
@@ -177,12 +200,17 @@ export function makeTulipTexture(baseHex = '#d42a2a') {
 
   // ENRIQUECER el color (multiply): la luz/reflejo lavaban el rojo a coral.
   // Multiply con el propio color profundiza la saturacion; en los claros (base
-  // palida/blanca) casi no hace nada -> funciona para cualquier color.
+  // palida) casi no hace nada. Se aplica con DEGRADADO (fuerte arriba -> se
+  // desvanece hacia la base) para no dejar un escalon visible a media altura.
   ctx.globalCompositeOperation = 'multiply'
-  ctx.globalAlpha = 0.3
-  ctx.fillStyle = baseHex
-  ctx.fillRect(0, 0, c.width, cH * 0.72) // solo el cuerpo de color, no la base clara
-  ctx.globalAlpha = 1
+  const deep = ctx.createLinearGradient(0, 0, 0, c.height)
+  const bh = baseHex
+  deep.addColorStop(0, hexA(bh, 0.34))
+  deep.addColorStop(0.6, hexA(bh, 0.3))
+  deep.addColorStop(0.82, hexA(bh, 0.1))
+  deep.addColorStop(1, hexA(bh, 0))
+  ctx.fillStyle = deep
+  ctx.fillRect(0, 0, c.width, c.height)
   ctx.globalCompositeOperation = 'source-over'
 
   const tex = new THREE.CanvasTexture(c)
