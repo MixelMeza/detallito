@@ -62,8 +62,8 @@ function meridian(u, open) {
   if (!open) return { r: Math.max(BASE_RADIUS, egg), y }
   // ABIERTO: copa. La mitad superior se EVIERTE hacia afuera (las puntas se
   // abren y separan un poco -> se ve el centro), pero el cuerpo sigue solapado.
-  const mouth = MAXR * 0.44 * smooth01((u - 0.42) / 0.58) // boca se abre
-  const tipOut = MAXR * 0.12 * smooth01((u - 0.75) / 0.25) // puntas apenas evertidas
+  const mouth = MAXR * 0.46 * smooth01((u - 0.4) / 0.6) // boca se abre (copa limpia)
+  const tipOut = MAXR * 0.06 * smooth01((u - 0.8) / 0.2) // puntas apenas ceden (crown limpia)
   const drop = 0.16 * smooth01((u - 0.45) / 0.55) // se acorta al abrir
   return { r: Math.max(BASE_RADIUS, Math.max(egg, mouth) + tipOut), y: y - drop }
 }
