@@ -45,16 +45,16 @@ export function createBouquet(vase) {
     return new THREE.MeshPhysicalMaterial({
       color: new THREE.Color('#ffffff'),
       map: petalTexture,
-      roughness: 0.5,
+      roughness: 0.62, // mas SATINADO/mate (menos brillo plastico en las caras)
       metalness: 0.0,
       side: THREE.DoubleSide,
-      sheen: 0.28,
+      sheen: 0.3,
       sheenColor: new THREE.Color('#ffffff'), // NEUTRO: el rosa lavaba el rojo a coral
-      sheenRoughness: 0.6,
+      sheenRoughness: 0.75,
       // sin transmision: petalo opaco y mejor rendimiento en movil
       transmission: 0.0,
       ior: 1.35,
-      envMapIntensity: 0.75
+      envMapIntensity: 0.55
     })
   }
   const neckY = vase.height * 0.96
