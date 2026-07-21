@@ -26,8 +26,8 @@ function smooth01(x) {
 // cierran la superficie -> sin muescas/dientes en la cima.
 // medio-ancho angular por estado. Abierto usa MAS ancho para que la copa siga
 // LLENA (tepalos solapados, borde apenas ondulado) en vez de dientes separados.
-const ALPHA_CLOSED = 0.62
-const ALPHA_OPEN = 0.72
+const ALPHA_CLOSED = 0.64
+const ALPHA_OPEN = 0.58
 function tepalWidth(u, open) {
   const rise = smooth01(u / 0.12) // nace estrecho del receptaculo
   if (!open) {
@@ -35,9 +35,9 @@ function tepalWidth(u, open) {
     // sola porque el radio del meridiano tiende a 0 arriba (domo redondeado)
     return rise * (1 - 0.12 * smooth01((u - 0.8) / 0.2))
   }
-  // abierto: se afina SUAVE hacia la punta -> copa llena con borde ondulado
-  // (6 puntas redondeadas visibles), no dientes en V muy separados
-  return rise * (1 - 0.3 * smooth01((u - 0.5) / 0.5))
+  // abierto: se afina hacia la punta -> las puntas se SEPARAN un poco (dejan ver
+  // el centro) y quedan REDONDEADAS, pero el cuerpo sigue solapado (sin dientes)
+  return rise * (1 - 0.4 * smooth01((u - 0.45) / 0.55))
 }
 
 // Meridiano (radio, altura) del tepalo. CLAVE del arreglo: la CIMA es
@@ -58,13 +58,15 @@ function meridian(u, open) {
   // REDONDEADA. (1-u)^0.55 hace que arriba el perfil se doble en domo (no punta).
   const egg = (MAXR * Math.pow(u, 0.85) * Math.pow(1 - u, 0.55)) / CLOSED_NORM
   if (!open) return { r: Math.max(BASE_RADIUS, egg), y }
-  // ABIERTO: COPA -> boca tan ancha como la panza del capullo (no un cuenco
-  // plano). La base igual que cerrado y el borde REDONDEADO (no afilado).
-  const cup = MAXR * 0.98 * Math.pow(u, 0.62)
-  const tipRound = 1 - 0.14 * smooth01((u - 0.82) / 0.18)
-  const mix = smooth01((u - 0.12) / 0.6)
-  const r = (egg * (1 - mix) + cup * mix) * tipRound
-  return { r: Math.max(BASE_RADIUS, r), y }
+  // ABIERTO: el mismo HUEVO que apenas se ENTREABRE arriba. NO es un embudo:
+  // conserva la panza; la BOCA (arriba) es mas ESTRECHA que la panza (las puntas
+  // aun curvan hacia adentro), solo que no cierran del todo -> se ve el centro.
+  // Las puntas ceden un pelin hacia afuera (leve recurva) y quedan redondeadas.
+  const mouth = MAXR * 0.24 * smooth01((u - 0.5) / 0.5) // boca entreabierta
+  const tipOut = MAXR * 0.08 * smooth01((u - 0.82) / 0.18) // leve recurva de la punta
+  // se acorta un poco al abrir (la flor baja al entreabrir)
+  const drop = 0.14 * smooth01((u - 0.5) / 0.5)
+  return { r: Math.max(BASE_RADIUS, Math.max(egg, mouth) + tipOut), y: y - drop }
 }
 
 function buildPositions(open) {
@@ -198,14 +200,15 @@ export function createTulip({ petalMaterial, seed = 0 }) {
   for (let i = 0; i < 6; i++) {
     const mesh = new THREE.Mesh(geo, petalMaterial)
     mesh.castShadow = true
-    const inner = i % 2 === 0
-    mesh.rotation.y = (i / 6) * Math.PI * 2 + (hash(seed * 6 + i) - 0.5) * 0.1
-    mesh.rotation.x = (inner ? -0.02 : 0.03) + (hash(seed * 13 + i) - 0.5) * 0.06
+    const inner = i % 2 === 0 // 2 verticilos de 3 (interior/exterior alternados)
+    // jitter MINIMO -> borde superior PAREJO (nada de puntas rasgadas)
+    mesh.rotation.y = (i / 6) * Math.PI * 2 + (hash(seed * 6 + i) - 0.5) * 0.04
+    mesh.rotation.x = (inner ? -0.01 : 0.02) + (hash(seed * 13 + i) - 0.5) * 0.02
     mesh.position.y = inner ? 0.02 : 0
-    mesh.scale.y = 0.97 + hash(seed * 23 + i) * 0.08
+    mesh.scale.y = 0.99 + hash(seed * 23 + i) * 0.03
     mesh.updateMorphTargets()
-    mesh.userData.bloomBias = 0.92 + hash(seed * 31 + i) * 0.12
-    mesh.userData.phase = (inner ? 0.16 : 0.0) + hash(seed * 41 + i) * 0.08
+    mesh.userData.bloomBias = 0.96 + hash(seed * 31 + i) * 0.06
+    mesh.userData.phase = (inner ? 0.1 : 0.0) + hash(seed * 41 + i) * 0.05
     mesh.morphTargetInfluences[0] = 0
     mesh.userData.isPetal = true
     group.add(mesh)
