@@ -18,10 +18,6 @@ const MAXR = 0.54 // mas ESBELTO (goblet slim, como el tulipan rosa real)
 // punta SUAVE (B algo mayor -> las puntas convergen, no un domo tan romo)
 const EGG_A = 0.72
 const EGG_B = 0.54
-// ABIERTO (florecido): mas ANCHO, hombros mas altos y cima REDONDA (B bajo)
-const OPEN_A = 0.58
-const OPEN_B = 0.3
-const OPEN_WIDE = 1.2
 const rad = (d) => (d * Math.PI) / 180
 
 function smooth01(x) {
@@ -39,12 +35,14 @@ function smooth01(x) {
 // CERRADO: solape fuerte (sin huecos, huevo liso). ABIERTO: algo mas estrecho
 // para que las puntas se SEPAREN al evertirse (se ve el centro), pero el interior
 // ahora es de color saturado -> las separaciones muestran color, no cuñas blancas.
-// SOLAPE FUERTE en ambos estados -> copa LLENA sin huecos ni dientes. El abierto
-// es una copa llena y redonda (florecida), no una estrella separada.
+// Ambos con solape fuerte en el CUERPO. En el abierto los tepalos se AFINAN
+// arriba -> se SEPARAN SOLO en el tercio superior (el cuerpo sigue unido/lleno)
+// y cada punta queda REDONDEADA como una cuchara.
 const ALPHA_CLOSED = 0.72
 const ALPHA_OPEN = 0.72
 function tepalWidth(u, open) {
   const rise = smooth01(u / 0.12) // nace estrecho del receptaculo
+  if (open) return rise * (1 - 0.72 * smooth01((u - 0.55) / 0.45)) // separa+redondea la punta
   return rise * (1 - 0.1 * smooth01((u - 0.62) / 0.38))
 }
 
@@ -61,18 +59,19 @@ function normOf(a, b) {
   return m
 }
 const CLOSED_NORM = normOf(EGG_A, EGG_B)
-const OPEN_NORM = normOf(OPEN_A, OPEN_B)
 function meridian(u, open) {
   const y = LENGTH * u
   // HUEVO rechoncho: base estrecha, hombros LLENOS en el tercio superior, y CIMA
   // ROMA/redondeada. (1-u)^0.45 dobla el perfil en domo arriba (nunca punta).
   const egg = (MAXR * Math.pow(u, EGG_A) * Math.pow(1 - u, EGG_B)) / CLOSED_NORM
   if (!open) return { r: Math.max(BASE_RADIUS, egg), y }
-  // ABIERTO = FLORECIDO: el mismo tulipan pero MAS LLENO y REDONDO. Mas ancho,
-  // hombros mas altos y CORONA REDONDA (los tepalos se abren y redondean arriba,
-  // sin punta). Version "inflada" del capullo -> floracion suave con el morph.
-  const openR = (MAXR * OPEN_WIDE * Math.pow(u, OPEN_A) * Math.pow(1 - u, OPEN_B)) / OPEN_NORM
-  return { r: Math.max(BASE_RADIUS, openR), y }
+  // ABIERTO: los tepalos se ABREN. Mantienen la PANZA (egg) pero ARRIBA ya NO
+  // convergen: se quedan anchos y las puntas se van hacia AFUERA-ARRIBA. Junto
+  // con un alpha menor (se SEPARAN), cada tepalo queda como una CUCHARA abierta
+  // mirando arriba (no una copa inflada continua).
+  const openTip = MAXR * 0.9 * smooth01(u / 0.92) // arriba se queda ancho (no converge)
+  const tipUp = 0.14 * smooth01((u - 0.7) / 0.3) // la punta se eleva/recurva un poco
+  return { r: Math.max(BASE_RADIUS, Math.max(egg, openTip)), y: y + tipUp }
 }
 
 function buildPositions(open) {
