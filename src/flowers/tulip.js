@@ -18,10 +18,10 @@ const MAXR = 0.54 // mas ESBELTO (goblet slim, como el tulipan rosa real)
 // punta SUAVE (B algo mayor -> las puntas convergen, no un domo tan romo)
 const EGG_A = 0.72
 const EGG_B = 0.54
-// ABIERTO (florecido): mas ANCHO y REDONDO. B bajo = cima roma; ademas la cima
-// se queda ANCHA (corona redonda) en vez de converger a punta.
-const OPEN_A = 0.6
-const OPEN_B = 0.34
+// ABIERTO (florecido): mas ANCHO que el capullo, pero los tepalos terminan en
+// PUNTA SUAVE (como el dibujo), no en domo romo. B algo mayor = mas punta.
+const OPEN_A = 0.62
+const OPEN_B = 0.5
 const OPEN_WIDE = 1.12
 const rad = (d) => (d * Math.PI) / 180
 
@@ -46,10 +46,12 @@ function smooth01(x) {
 // Ambos con tepalos ANCHOS y solapados. Abierto solo un pelin mas estrecho ->
 // borde superior con FESTON suave (lobulos anchos y REDONDEADOS), NUNCA puas.
 const ALPHA_CLOSED = 0.72
-const ALPHA_OPEN = 0.66
+const ALPHA_OPEN = 0.64
 function tepalWidth(u, open) {
   const rise = smooth01(u / 0.12) // nace estrecho del receptaculo
-  if (open) return rise * (1 - 0.22 * smooth01((u - 0.6) / 0.4)) // ancho, punta redondeada
+  // abierto: ancho en el cuerpo y afina a PUNTA SUAVE (arco de hoja) arriba,
+  // como en el dibujo -> tepalos definidos que rematan en punta, no en domo.
+  if (open) return rise * (1 - 0.55 * smooth01((u - 0.5) / 0.5))
   return rise * (1 - 0.1 * smooth01((u - 0.62) / 0.38))
 }
 
@@ -77,8 +79,8 @@ function meridian(u, open) {
   // CORONA REDONDA. La cima no converge a punta: se queda ANCHA (los tepalos
   // anchos y redondeados forman el borde). Puntas apenas hacia afuera-arriba.
   const fuller = (MAXR * OPEN_WIDE * Math.pow(u, OPEN_A) * Math.pow(1 - u, OPEN_B)) / OPEN_NORM
-  const crown = MAXR * 0.44 * smooth01(u / 0.88) // la corona (arriba) se mantiene ancha
-  const tipUp = 0.1 * smooth01((u - 0.72) / 0.28) // borde apenas se eleva
+  const crown = MAXR * 0.24 * smooth01(u / 0.9) // arriba no cierra del todo (punta suave)
+  const tipUp = 0.12 * smooth01((u - 0.7) / 0.3) // las puntas se elevan un poco
   return { r: Math.max(BASE_RADIUS, Math.max(fuller, crown)), y: y + tipUp }
 }
 
