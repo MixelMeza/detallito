@@ -219,7 +219,10 @@ export function makeTulipTexture(baseHex = '#d42a2a') {
   return tex
 }
 
-const BUD_TINT = new THREE.Color('#c3d29a')
+// tinte del capullo (cerrado): antes '#c3d29a' oscurecia/apagaba mucho el color
+// saturado -> cerrado se veia OSCURO. Ahora es casi blanco (apenas un toque
+// verde) para que cerrado conserve su color, solo un pelin mas apagado.
+const BUD_TINT = new THREE.Color('#edf0e2')
 const OPEN_TINT = new THREE.Color('#ffffff')
 
 export const TULIP_DEFAULTS = {
