@@ -11,12 +11,13 @@ import * as THREE from 'three'
 
 const U = 28
 const V = 20
-const LENGTH = 1.85 // alto de la flor. Con MAXR 0.6 -> diametro ~1.2 => ratio ~1.6:1
+const LENGTH = 1.95 // alto de la flor. Con MAXR 0.54 -> ratio ~1.8:1 (ESBELTO)
 const BASE_RADIUS = 0.05
-const MAXR = 0.6 // radio maximo de la flor -> mas RECHONCHA (como el morado real)
-// exponentes del huevo: base estrecha (A) y hombros llenos + cima ROMA (B bajo)
-const EGG_A = 0.7
-const EGG_B = 0.45
+const MAXR = 0.54 // mas ESBELTO (goblet slim, como el tulipan rosa real)
+// exponentes del huevo: base estrecha (A) y hombros llenos + cima con punta
+// SUAVE (B algo mayor -> las puntas convergen, no un domo tan romo)
+const EGG_A = 0.72
+const EGG_B = 0.54
 const rad = (d) => (d * Math.PI) / 180
 
 function smooth01(x) {
@@ -169,9 +170,9 @@ export function makeTulipTexture(baseHex = '#d42a2a') {
   // a blanco puro y quedaba lavado -> ese era parte del problema.
   const vgrad = ctx.createLinearGradient(0, 0, 0, c.height)
   vgrad.addColorStop(0, 'rgba(255,255,255,0)') // puntas: color pleno
-  vgrad.addColorStop(0.62, 'rgba(255,255,255,0)') // sigue pleno
-  vgrad.addColorStop(0.85, 'rgba(255,250,245,0.2)') // apenas se aclara
-  vgrad.addColorStop(1, 'rgba(255,248,240,0.4)') // base algo mas clara, NO blanca
+  vgrad.addColorStop(0.5, 'rgba(255,255,255,0)') // mitad superior pleno
+  vgrad.addColorStop(0.74, 'rgba(255,252,248,0.35)') // empieza a aclarar
+  vgrad.addColorStop(1, 'rgba(255,251,246,0.78)') // tercio inferior CLARO (crema)
   ctx.fillStyle = vgrad
   ctx.fillRect(0, 0, c.width, c.height)
 
