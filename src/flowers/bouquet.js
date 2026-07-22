@@ -113,10 +113,10 @@ export function createBouquet(vase) {
     return { stem, curve, leaves, tip: head.clone(), dir: head.clone().sub(mouth).normalize() }
   }
 
-  // Separa las cabezas para que no se toquen (una sola vez para las MAX)
-  function relax(heads, radii) {
-    const maxR = 1.95
-    for (let iter = 0; iter < 90; iter++) {
+  // Solver de COLISION: separa las cabezas para que no se toquen/atraviesen.
+  // radii = radio de cada flor (tamaño real por tipo); maxR = alcance maximo.
+  function relax(heads, radii, maxR) {
+    for (let iter = 0; iter < 130; iter++) {
       for (let a = 0; a < heads.length; a++) {
         for (let b = a + 1; b < heads.length; b++) {
           const pa = heads[a]
@@ -144,43 +144,42 @@ export function createBouquet(vase) {
     }
   }
 
-  // ---- Construccion (una vez): MAX flores en posiciones fijas ----
+  // ---- Posiciones BASE (filotaxis) una vez ----
   const up = new THREE.Vector3(0, 1, 0)
-  const heads = []
-  const radii = []
+  const basePos = []
   const metas = []
   for (let i = 0; i < MAX; i++) {
     const isBud = i % 3 === 2 // ~1/3 capullos cerrados, distribuidos
-    const t = i / (MAX - 1)
     const az = i * GOLDEN + 0.6
     const scale = isBud ? 0.55 : 0.6 + ((i * 29) % 10) / 10 * 0.14
-    // espiral tipo filotaxis en cupula (bastante nivelada para no "caer")
-    const rh = 0.58 * Math.sqrt(i) // radio horizontal
+    const rh = 0.58 * Math.sqrt(i) // radio horizontal (espiral en cupula)
     const y = neckY + 1.7 - 0.075 * i
-    const head = new THREE.Vector3(Math.cos(az) * rh, y, Math.sin(az) * rh)
-    heads.push(head)
-    radii.push(scale * 1.7)
+    basePos.push(new THREE.Vector3(Math.cos(az) * rh, y, Math.sin(az) * rh))
     metas.push({ isBud, scale, az })
   }
-  relax(heads, radii)
 
-  // Separacion por tipo de flor: los tulipanes son estrechos, van MAS JUNTOS
-  // (ramo denso). Escala la posicion horizontal (xz) de cada cabeza hacia el eje.
-  function currentSpread() {
-    return FLOWER_TYPES[flowerType].defaults.spread || 1
+  // Layout con SEPARACION propia por tipo: cada flor tiene su radio de colision
+  // (radiusFactor) y alcance (maxR). Recalculado al cambiar de tipo -> las
+  // orquideas (grandes) se abren mas y NO se atraviesan; los tulipanes van densos.
+  let layoutHeads = []
+  function computeLayout() {
+    const d = FLOWER_TYPES[flowerType].defaults
+    const factor = d.radiusFactor || 1.7
+    const maxR = d.maxR || 1.95
+    const heads = basePos.map((p) => p.clone())
+    const radii = metas.map((m) => m.scale * factor)
+    relax(heads, radii, maxR)
+    layoutHeads = heads
   }
-  function scaledHead(i) {
-    const h = heads[i]
-    const s = currentSpread()
-    return new THREE.Vector3(h.x * s, h.y, h.z * s)
-  }
-  // (Re)construye el tallo de una flor en su posicion segun la separacion actual.
+  computeLayout()
+
+  // (Re)construye el tallo de una flor en su posicion de layout actual.
   function rebuildStem(f) {
     if (f.stemObj) {
       group.remove(f.stemObj.stem)
       f.stemObj.stem.geometry.dispose()
     }
-    const stemObj = makeStem(scaledHead(f.index), f.meta.az)
+    const stemObj = makeStem(layoutHeads[f.index], f.meta.az)
     stemObj.stem.visible = f.active
     group.add(stemObj.stem)
     f.stemObj = stemObj
@@ -327,6 +326,7 @@ export function createBouquet(vase) {
     throatHex = d.throat || throatHex
     petalTexture.dispose()
     petalTexture = FLOWER_TYPES[type].makeTexture(petalHex, throatHex)
+    computeLayout() // separacion propia del nuevo tipo (evita traspaso)
     for (const f of flowers) {
       if (f._tween) f._tween.kill()
       if (f._bloomTween) f._bloomTween.kill()

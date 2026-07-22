@@ -229,7 +229,9 @@ export const TULIP_DEFAULTS = {
   color: '#ec5fa2', // ROSADO por defecto
   presets: ['#ec5fa2', '#d42a2a', '#f0a500', '#ffd23f', '#ffffff', '#8e3bd6'],
   sizeScale: 1.25, // un poco mas grandes que lirio/orquidea
-  spread: 0.62 // mas JUNTOS (son estrechos) -> ramo denso, no disperso
+  // estrechos -> radio de colision chico y alcance corto = ramo DENSO
+  radiusFactor: 1.15,
+  maxR: 1.35
 }
 
 export function createTulip({ petalMaterial, seed = 0 }) {

@@ -226,7 +226,11 @@ const OPEN_TINT = new THREE.Color('#ffffff')
 
 export const ORCHID_DEFAULTS = {
   color: '#df57a4', // ROSADO/fucsia por defecto (como la Phalaenopsis)
-  presets: ['#df57a4', '#ffffff', '#a05fd6', '#ff9ec7', '#f2d43a', '#c9a0ff']
+  presets: ['#df57a4', '#ffffff', '#a05fd6', '#ff9ec7', '#f2d43a', '#c9a0ff'],
+  sizeScale: 0.85, // un pelin mas pequeñas -> caben sin atravesarse ni salirse
+  // flores anchas -> radio de colision y alcance amplios (no se atraviesan)
+  radiusFactor: 2.15,
+  maxR: 2.65
 }
 
 // 3 sepalos + 2 petalos (alas); los petalos, mas anchos y adyacentes al dorsal
