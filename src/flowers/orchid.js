@@ -11,7 +11,7 @@ const U = 16
 const V = 16
 const LENGTH = 1.6
 const MAX_WIDTH = 0.66 // ANGOSTO -> los 5 tepalos se SEPARAN de verdad (estrella, con hueco abajo)
-const BASE_RADIUS = 0.16 // tepalos nacen de un anillo pequeño -> se ve el labio/columna sin gran hueco
+const BASE_RADIUS = 0.11 // tepalos casi se juntan al centro -> hueco minimo (el labio va delante)
 const rad = (d) => (d * Math.PI) / 180
 
 function segAngle(u, open) {
@@ -120,13 +120,6 @@ export function makeOrchidTexture(baseHex = '#ffffff') {
     ctx.quadraticCurveTo(c.width / 2 + k * 26, c.height * 0.45, c.width / 2 + k * 22, 0)
     ctx.stroke()
   }
-  // leve sombreado en los bordes (menos aspecto plano/transparente)
-  const vg = ctx.createLinearGradient(0, 0, c.width, 0)
-  vg.addColorStop(0, 'rgba(60,60,80,0.16)')
-  vg.addColorStop(0.5, 'rgba(255,255,255,0)')
-  vg.addColorStop(1, 'rgba(60,60,80,0.16)')
-  ctx.fillStyle = vg
-  ctx.fillRect(0, 0, c.width, c.height)
   // base un pelin mas calida (SUAVE -> sin glow blanco que lave el centro)
   const g = ctx.createLinearGradient(0, c.height, 0, c.height * 0.82)
   g.addColorStop(0, 'rgba(240,225,200,0.2)')
@@ -149,6 +142,22 @@ export function makeOrchidTexture(baseHex = '#ffffff') {
       ctx.fill()
     }
   }
+
+  // BORDE BLANCO suave del petalo (lados = bordes del tepalo, y la PUNTA arriba)
+  // -> el color queda "coloreado" al centro con margen blanco, como la Phalaenopsis.
+  const edge = ctx.createLinearGradient(0, 0, c.width, 0)
+  edge.addColorStop(0.0, 'rgba(255,255,255,0.95)')
+  edge.addColorStop(0.16, 'rgba(255,255,255,0)')
+  edge.addColorStop(0.84, 'rgba(255,255,255,0)')
+  edge.addColorStop(1.0, 'rgba(255,255,255,0.95)')
+  ctx.fillStyle = edge
+  ctx.fillRect(0, 0, c.width, c.height)
+  const tipEdge = ctx.createLinearGradient(0, 0, 0, c.height * 0.22)
+  tipEdge.addColorStop(0, 'rgba(255,255,255,0.9)') // punta (arriba del canvas)
+  tipEdge.addColorStop(1, 'rgba(255,255,255,0)')
+  ctx.fillStyle = tipEdge
+  ctx.fillRect(0, 0, c.width, c.height * 0.22)
+
   const tex = new THREE.CanvasTexture(c)
   tex.colorSpace = THREE.SRGBColorSpace
   tex.anisotropy = 4
@@ -216,8 +225,8 @@ const BUD_TINT = new THREE.Color('#c7d3a4')
 const OPEN_TINT = new THREE.Color('#ffffff')
 
 export const ORCHID_DEFAULTS = {
-  color: '#ffffff',
-  presets: ['#ffffff', '#d94fa0', '#a05fd6', '#ff9ec7', '#f2d43a', '#c9a0ff']
+  color: '#df57a4', // ROSADO/fucsia por defecto (como la Phalaenopsis)
+  presets: ['#df57a4', '#ffffff', '#a05fd6', '#ff9ec7', '#f2d43a', '#c9a0ff']
 }
 
 // 3 sepalos + 2 petalos (alas); los petalos, mas anchos y adyacentes al dorsal
@@ -255,14 +264,14 @@ export function createOrchid({ petalMaterial, seed = 0 }) {
     meshes.push(mesh)
   })
 
-  // GARGANTA: disco oscuro (maroon) que TAPA el centro -> sin hueco al fondo, y
-  // da el "ojo" oscuro tipico del Cymbidium. Va detras del labio/columna.
+  // GARGANTA: disco MINIMO y plano que solo tapa el huequito central (los
+  // tepalos casi se juntan). Pequeño y detras del labio -> no asoma como aro/bola.
   const throat = new THREE.Mesh(
-    new THREE.CircleGeometry(0.5, 28),
-    new THREE.MeshStandardMaterial({ color: 0x611028, roughness: 0.6, side: THREE.DoubleSide })
+    new THREE.CircleGeometry(0.17, 20),
+    new THREE.MeshStandardMaterial({ color: 0x7a1a3c, roughness: 0.6, side: THREE.DoubleSide })
   )
-  throat.rotation.x = -Math.PI / 2 // de cara al visor
-  throat.position.set(0, -0.04, 0.1)
+  throat.rotation.x = -Math.PI / 2 // de cara al visor (queda de canto desde los lados)
+  throat.position.set(0, -0.02, 0.04)
   faceGroup.add(throat)
 
   group.add(faceGroup)

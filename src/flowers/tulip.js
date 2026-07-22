@@ -226,8 +226,8 @@ const BUD_TINT = new THREE.Color('#edf0e2')
 const OPEN_TINT = new THREE.Color('#ffffff')
 
 export const TULIP_DEFAULTS = {
-  color: '#d42a2a',
-  presets: ['#d42a2a', '#f0a500', '#ffd23f', '#ff7ab0', '#ffffff', '#8e3bd6'],
+  color: '#ec5fa2', // ROSADO por defecto
+  presets: ['#ec5fa2', '#d42a2a', '#f0a500', '#ffd23f', '#ffffff', '#8e3bd6'],
   sizeScale: 1.25, // un poco mas grandes que lirio/orquidea
   spread: 0.62 // mas JUNTOS (son estrechos) -> ramo denso, no disperso
 }
