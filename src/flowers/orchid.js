@@ -15,9 +15,9 @@ const BASE_RADIUS = 0.16 // tepalos nacen de un anillo pequeño -> se ve el labi
 const rad = (d) => (d * Math.PI) / 180
 
 function segAngle(u, open) {
-  // abierto: los segmentos salen CASI HORIZONTALES desde la base -> cara PLANA
-  // (no embudo). Leve dishing hacia el frente.
-  if (open) return rad(72 + 15 * u)
+  // abierto: el tepalo sube casi de cara y la PUNTA RECURVA un poco hacia atras
+  // -> la cara no es un disco plano, tiene relieve/profundidad.
+  if (open) return rad(66 + 30 * smooth01((u - 0.45) / 0.55))
   // cerrado: TEARDROP alargado -> panza baja y cierra en punta suave arriba
   return rad(27 * Math.cos(Math.PI * Math.min(u * 0.96, 1)))
 }
@@ -45,7 +45,7 @@ function buildPositions(open) {
     cy.push(cy[i - 1] + Math.cos(th) * ds)
     cz.push(cz[i - 1] + Math.sin(th) * ds)
   }
-  const channel = open ? 0.05 : 0.52 // cara PLANA abierta (moth orchid); envuelve el capullo
+  const channel = open ? 0.24 : 0.52 // ACOPADO (no lamina plana) -> da profundidad
   for (let i = 0; i <= U; i++) {
     const u = i / U
     const w = segWidth(u)
@@ -133,7 +133,22 @@ export function makeOrchidTexture(baseHex = '#ffffff') {
   g.addColorStop(1, 'rgba(255,255,255,0)')
   ctx.fillStyle = g
   ctx.fillRect(0, c.height * 0.82, c.width, c.height * 0.18)
-  // (las pecas de la garganta ya las lleva el LABIO; los tepalos van limpios)
+  // MOTEADO tipo Vanda (tesela): puntos oscuros del color, mas grandes y densos
+  // hacia la BASE/centro (abajo) -> textura y PROFUNDIDAD (no un liso plano).
+  for (let gy = 2; gy <= 21; gy++) {
+    const y = (gy / 22) * c.height
+    const fb = gy / 22 // 0 punta (arriba) -> 1 base/centro (abajo)
+    const step = 22
+    const off = (gy % 2) * (step / 2) // filas alternadas -> tesela
+    for (let x = -step; x <= c.width + step; x += step) {
+      const size = 2.5 + 7 * fb * fb
+      const a = 0.1 + 0.42 * fb
+      ctx.fillStyle = `rgba(80,16,62,${a})`
+      ctx.beginPath()
+      ctx.ellipse(x + off, y, size, size * 0.92, 0, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
   const tex = new THREE.CanvasTexture(c)
   tex.colorSpace = THREE.SRGBColorSpace
   tex.anisotropy = 4
@@ -213,8 +228,8 @@ const SEGMENTS = [
   { rot: 180, wx: 1.02, wy: 1.06, ph: 0.0 }, // sepalo dorsal (arriba)
   { rot: 116, wx: 1.34, wy: 1.06, ph: 0.16 }, // petalo (ala) sup izq
   { rot: 244, wx: 1.34, wy: 1.06, ph: 0.16 }, // petalo (ala) sup der
-  { rot: 52, wx: 1.06, wy: 1.0, ph: 0.08 }, // sepalo inferior izq (flanquea labio)
-  { rot: 308, wx: 1.06, wy: 1.0, ph: 0.08 } // sepalo inferior der (flanquea labio)
+  { rot: 62, wx: 1.06, wy: 1.0, ph: 0.08 }, // sepalo inferior izq (flanquea labio)
+  { rot: 298, wx: 1.06, wy: 1.0, ph: 0.08 } // sepalo inferior der (flanquea labio)
 ]
 
 export function createOrchid({ petalMaterial, seed = 0 }) {
@@ -268,9 +283,9 @@ export function createOrchid({ petalMaterial, seed = 0 }) {
 
   // --- Labio (labellum) + columna en el centro (la firma de la orquidea) ---
   const lipGroup = new THREE.Group()
-  // adelantado hacia el visor -> el labio va POR DELANTE de los tepalos (no lo
-  // tapan/parten por el medio)
-  lipGroup.position.set(0, 0.2, 0)
+  // adelantado hacia el visor -> el labio va POR DELANTE de los tepalos acopados
+  // (no lo tapan/parten por el medio)
+  lipGroup.position.set(0, 0.34, 0)
 
   // LABIO: plano curvado con TEXTURA (blanco/amarillo/granate), mira al visor.
   const lipMat = new THREE.MeshStandardMaterial({
@@ -290,9 +305,9 @@ export function createOrchid({ petalMaterial, seed = 0 }) {
   }
   lipGeo.computeVertexNormals()
   const lip = new THREE.Mesh(lipGeo, lipMat)
-  lip.position.set(0, 0.02, 0.52) // cuelga en el hueco de abajo
+  lip.position.set(0, 0.02, 0.44) // cuelga en el hueco de abajo
   lip.rotation.x = -Math.PI / 2 // DE CARA al visor (normal = +Y de la flor)
-  lip.scale.setScalar(1.05) // grande y visible (la firma), ~2/3 de un tepalo
+  lip.scale.setScalar(1.0) // grande y visible (la firma), ~2/3 de un tepalo
   lipGroup.add(lip)
 
   // COLUMNA: capuchon PEQUEÑO magenta encima del labio + capuchon de antera BLANCO
