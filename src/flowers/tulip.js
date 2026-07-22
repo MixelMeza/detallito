@@ -14,10 +14,14 @@ const V = 20
 const LENGTH = 1.95 // alto de la flor. Con MAXR 0.54 -> ratio ~1.8:1 (ESBELTO)
 const BASE_RADIUS = 0.05
 const MAXR = 0.54 // mas ESBELTO (goblet slim, como el tulipan rosa real)
-// exponentes del huevo: base estrecha (A) y hombros llenos + cima con punta
-// SUAVE (B algo mayor -> las puntas convergen, no un domo tan romo)
+// exponentes del huevo CERRADO: base estrecha (A) y hombros llenos + cima con
+// punta SUAVE (B algo mayor -> las puntas convergen, no un domo tan romo)
 const EGG_A = 0.72
 const EGG_B = 0.54
+// ABIERTO (florecido): mas ANCHO, hombros mas altos y cima REDONDA (B bajo)
+const OPEN_A = 0.58
+const OPEN_B = 0.3
+const OPEN_WIDE = 1.2
 const rad = (d) => (d * Math.PI) / 180
 
 function smooth01(x) {
@@ -35,38 +39,40 @@ function smooth01(x) {
 // CERRADO: solape fuerte (sin huecos, huevo liso). ABIERTO: algo mas estrecho
 // para que las puntas se SEPAREN al evertirse (se ve el centro), pero el interior
 // ahora es de color saturado -> las separaciones muestran color, no cuñas blancas.
+// SOLAPE FUERTE en ambos estados -> copa LLENA sin huecos ni dientes. El abierto
+// es una copa llena y redonda (florecida), no una estrella separada.
 const ALPHA_CLOSED = 0.72
-const ALPHA_OPEN = 0.6
+const ALPHA_OPEN = 0.72
 function tepalWidth(u, open) {
   const rise = smooth01(u / 0.12) // nace estrecho del receptaculo
-  const tipTaper = open ? 0.35 : 0.1
-  return rise * (1 - tipTaper * smooth01((u - 0.62) / 0.38))
+  return rise * (1 - 0.1 * smooth01((u - 0.62) / 0.38))
 }
 
 // Meridiano (radio, altura) del tepalo. CLAVE del arreglo: la CIMA es
 // REDONDEADA (perfil tipo raiz cuadrada -> domo, como el top de un circulo),
 // NUNCA una punta afilada. Antes se integraba un angulo que formaba un cono.
-const CLOSED_NORM = (() => {
+function normOf(a, b) {
   let m = 1e-6
   for (let i = 0; i <= 200; i++) {
     const u = i / 200
-    const r = Math.pow(u, EGG_A) * Math.pow(1 - u, EGG_B)
+    const r = Math.pow(u, a) * Math.pow(1 - u, b)
     if (r > m) m = r
   }
   return m
-})()
+}
+const CLOSED_NORM = normOf(EGG_A, EGG_B)
+const OPEN_NORM = normOf(OPEN_A, OPEN_B)
 function meridian(u, open) {
   const y = LENGTH * u
   // HUEVO rechoncho: base estrecha, hombros LLENOS en el tercio superior, y CIMA
   // ROMA/redondeada. (1-u)^0.45 dobla el perfil en domo arriba (nunca punta).
   const egg = (MAXR * Math.pow(u, EGG_A) * Math.pow(1 - u, EGG_B)) / CLOSED_NORM
   if (!open) return { r: Math.max(BASE_RADIUS, egg), y }
-  // ABIERTO: copa. La mitad superior se EVIERTE hacia afuera (las puntas se
-  // abren y separan un poco -> se ve el centro), pero el cuerpo sigue solapado.
-  const mouth = MAXR * 0.46 * smooth01((u - 0.4) / 0.6) // boca se abre (copa limpia)
-  const tipOut = MAXR * 0.06 * smooth01((u - 0.8) / 0.2) // puntas apenas ceden (crown limpia)
-  const drop = 0.16 * smooth01((u - 0.45) / 0.55) // se acorta al abrir
-  return { r: Math.max(BASE_RADIUS, Math.max(egg, mouth) + tipOut), y: y - drop }
+  // ABIERTO = FLORECIDO: el mismo tulipan pero MAS LLENO y REDONDO. Mas ancho,
+  // hombros mas altos y CORONA REDONDA (los tepalos se abren y redondean arriba,
+  // sin punta). Version "inflada" del capullo -> floracion suave con el morph.
+  const openR = (MAXR * OPEN_WIDE * Math.pow(u, OPEN_A) * Math.pow(1 - u, OPEN_B)) / OPEN_NORM
+  return { r: Math.max(BASE_RADIUS, openR), y }
 }
 
 function buildPositions(open) {
