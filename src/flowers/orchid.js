@@ -9,9 +9,9 @@ import * as THREE from 'three'
 
 const U = 16
 const V = 16
-const LENGTH = 1.5
-const MAX_WIDTH = 1.08
-const BASE_RADIUS = 0.1
+const LENGTH = 1.6
+const MAX_WIDTH = 0.66 // ANGOSTO -> los 5 tepalos se SEPARAN de verdad (estrella, con hueco abajo)
+const BASE_RADIUS = 0.16 // tepalos nacen de un anillo pequeño -> se ve el labio/columna sin gran hueco
 const rad = (d) => (d * Math.PI) / 180
 
 function segAngle(u, open) {
@@ -26,10 +26,10 @@ function smooth01(x) {
   return x * x * (3 - 2 * x)
 }
 function segWidth(u) {
-  // petalo OVAL que se afina a PUNTA suave -> 5 petalos DISTINTOS (forma de
-  // estrella), no un circulo/bola.
-  const rise = smooth01(u / 0.1)
-  const taper = 1 - 0.6 * smooth01((u - 0.52) / 0.48)
+  // petalo ancho en el medio que se afina a PUNTA (ovado-lanceolado, como el
+  // tepalo del Cymbidium) -> 5 tepalos DISTINTOS y puntiagudos, no un disco.
+  const rise = smooth01(u / 0.14)
+  const taper = 1 - 0.82 * smooth01((u - 0.42) / 0.58)
   return MAX_WIDTH * rise * taper
 }
 
@@ -110,13 +110,14 @@ export function makeOrchidTexture(baseHex = '#ffffff') {
   const ctx = c.getContext('2d')
   ctx.fillStyle = baseHex
   ctx.fillRect(0, 0, c.width, c.height)
-  // venas radiales finas mas visibles (dan cuerpo al petalo)
-  ctx.strokeStyle = 'rgba(120,120,140,0.16)'
-  ctx.lineWidth = 1.6
-  for (let k = -4; k <= 4; k++) {
+  // venas longitudinales marcadas (rasgo del Cymbidium): lineas oscuras que
+  // irradian desde la base -> definen el petalo (no un borron liso)
+  ctx.strokeStyle = 'rgba(70,40,60,0.28)'
+  ctx.lineWidth = 1.8
+  for (let k = -5; k <= 5; k++) {
     ctx.beginPath()
-    ctx.moveTo(c.width / 2 + k * 12, c.height)
-    ctx.quadraticCurveTo(c.width / 2 + k * 30, c.height * 0.45, c.width / 2 + k * 24, 0)
+    ctx.moveTo(c.width / 2 + k * 8, c.height)
+    ctx.quadraticCurveTo(c.width / 2 + k * 26, c.height * 0.45, c.width / 2 + k * 22, 0)
     ctx.stroke()
   }
   // leve sombreado en los bordes (menos aspecto plano/transparente)
@@ -126,26 +127,73 @@ export function makeOrchidTexture(baseHex = '#ffffff') {
   vg.addColorStop(1, 'rgba(60,60,80,0.16)')
   ctx.fillStyle = vg
   ctx.fillRect(0, 0, c.width, c.height)
-  // base un pelin mas calida
-  const g = ctx.createLinearGradient(0, c.height, 0, c.height * 0.7)
-  g.addColorStop(0, 'rgba(245,240,210,0.5)')
+  // base un pelin mas calida (SUAVE -> sin glow blanco que lave el centro)
+  const g = ctx.createLinearGradient(0, c.height, 0, c.height * 0.82)
+  g.addColorStop(0, 'rgba(240,225,200,0.2)')
   g.addColorStop(1, 'rgba(255,255,255,0)')
   ctx.fillStyle = g
-  ctx.fillRect(0, c.height * 0.7, c.width, c.height * 0.3)
-  // pecas magenta cerca de la base-centro (garganta manchada tipica)
-  ctx.fillStyle = 'rgba(190,40,120,0.5)'
-  const spots = [
-    [0.5, 0.9, 4], [0.44, 0.86, 3], [0.56, 0.86, 3], [0.48, 0.82, 3],
-    [0.53, 0.82, 3], [0.5, 0.78, 3], [0.42, 0.9, 2], [0.58, 0.9, 2]
-  ]
-  spots.forEach(([sx, sy, r]) => {
-    ctx.beginPath()
-    ctx.ellipse(sx * c.width, sy * c.height, r, r * 1.4, 0, 0, Math.PI * 2)
-    ctx.fill()
-  })
+  ctx.fillRect(0, c.height * 0.82, c.width, c.height * 0.18)
+  // (las pecas de la garganta ya las lleva el LABIO; los tepalos van limpios)
   const tex = new THREE.CanvasTexture(c)
   tex.colorSpace = THREE.SRGBColorSpace
   tex.anisotropy = 4
+  return tex
+}
+
+// Textura del LABIO (labellum): silueta trilobulada, base BLANCA, garganta
+// AMARILLA, manchas y rayas GRANATE + borde granate. Fondo transparente
+// (alphaTest recorta la silueta). Es la firma visual de la orquidea.
+let sharedLipTex = null
+function makeLipTexture() {
+  if (sharedLipTex) return sharedLipTex
+  const c = document.createElement('canvas')
+  c.width = 256
+  c.height = 256
+  const ctx = c.getContext('2d')
+  ctx.clearRect(0, 0, 256, 256)
+  // silueta trilobulada (arriba = lado columna, angosto; abajo = lobulo medio, ancho)
+  const p = new Path2D()
+  p.moveTo(128, 34)
+  p.bezierCurveTo(176, 40, 208, 78, 202, 120)
+  p.bezierCurveTo(198, 168, 172, 214, 128, 240)
+  p.bezierCurveTo(84, 214, 58, 168, 54, 120)
+  p.bezierCurveTo(48, 78, 80, 40, 128, 34)
+  p.closePath()
+  ctx.save()
+  ctx.clip(p)
+  ctx.fillStyle = '#fbf7f2' // blanco crema
+  ctx.fillRect(0, 0, 256, 256)
+  // garganta AMARILLA central (dos crestas) hacia el lado columna
+  const yth = ctx.createLinearGradient(0, 40, 0, 200)
+  yth.addColorStop(0, 'rgba(245,200,60,0.95)')
+  yth.addColorStop(0.7, 'rgba(245,205,70,0.85)')
+  yth.addColorStop(1, 'rgba(245,210,90,0)')
+  ctx.fillStyle = yth
+  ctx.fillRect(104, 40, 48, 150)
+  // linea central granate sobre el amarillo
+  ctx.fillStyle = 'rgba(120,16,52,0.9)'
+  ctx.fillRect(123, 60, 10, 120)
+  // manchas/squiggles GRANATE en los lobulos laterales (izq y der)
+  ctx.fillStyle = 'rgba(120,16,52,0.92)'
+  const blobs = [
+    [80, 100, 10, 7], [92, 128, 12, 8], [78, 150, 9, 7], [96, 172, 11, 7],
+    [176, 100, 10, 7], [164, 128, 12, 8], [178, 150, 9, 7], [160, 172, 11, 7],
+    [110, 205, 9, 6], [146, 205, 9, 6], [128, 220, 12, 7]
+  ]
+  blobs.forEach(([x, y, rx, ry]) => {
+    ctx.beginPath()
+    ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2)
+    ctx.fill()
+  })
+  // borde GRANATE (margen del labio)
+  ctx.lineWidth = 18
+  ctx.strokeStyle = '#6e0f2b'
+  ctx.stroke(p)
+  ctx.restore()
+  const tex = new THREE.CanvasTexture(c)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.anisotropy = 4
+  sharedLipTex = tex
   return tex
 }
 
@@ -191,6 +239,17 @@ export function createOrchid({ petalMaterial, seed = 0 }) {
     faceGroup.add(mesh)
     meshes.push(mesh)
   })
+
+  // GARGANTA: disco oscuro (maroon) que TAPA el centro -> sin hueco al fondo, y
+  // da el "ojo" oscuro tipico del Cymbidium. Va detras del labio/columna.
+  const throat = new THREE.Mesh(
+    new THREE.CircleGeometry(0.5, 28),
+    new THREE.MeshStandardMaterial({ color: 0x611028, roughness: 0.6, side: THREE.DoubleSide })
+  )
+  throat.rotation.x = -Math.PI / 2 // de cara al visor
+  throat.position.set(0, -0.04, 0.1)
+  faceGroup.add(throat)
+
   group.add(faceGroup)
 
   // CAPULLO teardrop (malla aparte): limpio y realista cuando esta cerrado;
@@ -209,43 +268,45 @@ export function createOrchid({ petalMaterial, seed = 0 }) {
 
   // --- Labio (labellum) + columna en el centro (la firma de la orquidea) ---
   const lipGroup = new THREE.Group()
-  const lipYellow = new THREE.MeshStandardMaterial({ color: 0xf2c23a, roughness: 0.5 })
-  const lipMagenta = new THREE.MeshStandardMaterial({ color: 0xc23a86, roughness: 0.5 })
-  const columnMat = new THREE.MeshStandardMaterial({ color: 0xf7f0e0, roughness: 0.5 })
-  const redMat = new THREE.MeshStandardMaterial({ color: 0x9a1030, roughness: 0.5 })
+  // adelantado hacia el visor -> el labio va POR DELANTE de los tepalos (no lo
+  // tapan/parten por el medio)
+  lipGroup.position.set(0, 0.2, 0)
 
-  // columna (curva palida, apunta al frente-arriba)
-  const column = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.24, 5, 10), columnMat)
-  column.position.set(0, 0.42, 0.16)
-  column.rotation.x = 0.5
+  // LABIO: plano curvado con TEXTURA (blanco/amarillo/granate), mira al visor.
+  const lipMat = new THREE.MeshStandardMaterial({
+    map: makeLipTexture(),
+    transparent: true,
+    alphaTest: 0.5,
+    side: THREE.DoubleSide,
+    roughness: 0.55
+  })
+  const lipGeo = new THREE.PlaneGeometry(1.3, 1.45, 12, 14)
+  // curl SUAVE: solo el borde frontal (y negativo) se dobla un poco hacia el
+  // visor, sin dejar de estar de cara (el labio real cae/ondula al frente)
+  const lp = lipGeo.attributes.position
+  for (let i = 0; i < lp.count; i++) {
+    const front = Math.max(0, -lp.getY(i) / 0.725) // 0 atras -> 1 frente
+    lp.setZ(i, lp.getZ(i) + 0.12 * front * front)
+  }
+  lipGeo.computeVertexNormals()
+  const lip = new THREE.Mesh(lipGeo, lipMat)
+  lip.position.set(0, 0.02, 0.52) // cuelga en el hueco de abajo
+  lip.rotation.x = -Math.PI / 2 // DE CARA al visor (normal = +Y de la flor)
+  lip.scale.setScalar(1.05) // grande y visible (la firma), ~2/3 de un tepalo
+  lipGroup.add(lip)
+
+  // COLUMNA: capuchon PEQUEÑO magenta encima del labio + capuchon de antera BLANCO
+  const columnMat = new THREE.MeshStandardMaterial({ color: 0x9c2a63, roughness: 0.5 })
+  const capMat = new THREE.MeshStandardMaterial({ color: 0xf7f2ea, roughness: 0.45 })
+  const column = new THREE.Mesh(new THREE.CapsuleGeometry(0.06, 0.16, 6, 12), columnMat)
+  column.position.set(0, 0.12, 0.24) // sobre el borde superior del labio
+  column.rotation.x = 1.35 // arquea hacia abajo, sobre la garganta
   lipGroup.add(column)
+  const antherCap = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 10), capMat)
+  antherCap.position.set(0, 0.06, 0.33) // punta blanca de la columna (en la garganta)
+  antherCap.scale.set(1.3, 0.8, 1)
+  lipGroup.add(antherCap)
 
-  // lobulo medio del labio (amarillo, plataforma prominente hacia el frente)
-  const midLobe = new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), lipYellow)
-  midLobe.position.set(0, 0.1, 0.5)
-  midLobe.scale.set(1.1, 0.45, 1.5)
-  lipGroup.add(midLobe)
-  // "antenas" del lobulo medio (rasgo del labio)
-  for (const sx of [-1, 1]) {
-    const ant = new THREE.Mesh(new THREE.CapsuleGeometry(0.022, 0.2, 4, 8), lipYellow)
-    ant.position.set(sx * 0.1, 0.22, 0.72)
-    ant.rotation.z = sx * 0.4
-    ant.rotation.x = -0.6
-    lipGroup.add(ant)
-  }
-  // lobulos laterales (magenta, erguidos flanqueando la columna)
-  for (const sx of [-1, 1]) {
-    const side = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10), lipMagenta)
-    side.position.set(sx * 0.24, 0.4, 0.24)
-    side.scale.set(0.7, 1.3, 0.7)
-    lipGroup.add(side)
-  }
-  // pecas rojas sobre el amarillo
-  for (const [dx, dy, dz] of [[0, 0.2, 0.62], [-0.09, 0.12, 0.5], [0.09, 0.12, 0.5], [0, 0.08, 0.42]]) {
-    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), redMat)
-    dot.position.set(dx, dy, dz)
-    lipGroup.add(dot)
-  }
   faceGroup.add(lipGroup)
 
   let bloom = 0
