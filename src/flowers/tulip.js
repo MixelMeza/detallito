@@ -9,20 +9,11 @@ import * as THREE from 'three'
  *   trilobulado palido. Mancha basal oscura en la textura.
  */
 
-const U = 28
-const V = 20
-const LENGTH = 1.95 // alto de la flor. Con MAXR 0.54 -> ratio ~1.8:1 (ESBELTO)
-const BASE_RADIUS = 0.05
-const MAXR = 0.54 // mas ESBELTO (goblet slim, como el tulipan rosa real)
-// exponentes del huevo CERRADO: base estrecha (A) y hombros llenos + cima con
-// punta SUAVE (B algo mayor -> las puntas convergen, no un domo tan romo)
-const EGG_A = 0.72
-const EGG_B = 0.54
-// ABIERTO (florecido): mas ANCHO que el capullo, pero los tepalos terminan en
-// PUNTA SUAVE (como el dibujo), no en domo romo. B algo mayor = mas punta.
-const OPEN_A = 0.62
-const OPEN_B = 0.5
-const OPEN_WIDE = 1.12
+const U = 24
+const V = 12
+const LENGTH = 1.95
+const MAX_WIDTH = 0.46 // semiancho del tepalo (ancho -> se solapan y cierran)
+const BASE_RADIUS = 0.06
 const rad = (d) => (d * Math.PI) / 180
 
 function smooth01(x) {
@@ -30,73 +21,57 @@ function smooth01(x) {
   return x * x * (3 - 2 * x)
 }
 
-// Media anchura ANGULAR del tepalo (rad). El tulipan tiene 6 tepalos; con
-// ~32 grados de medio-ancho (0.56 rad) los 6 se SOLAPAN (6*2*32=384>360) y
-// cierran la superficie -> sin muescas/dientes en la cima.
-// medio-ancho angular por estado. Abierto usa MAS ancho para que la copa siga
-// LLENA (tepalos solapados, borde apenas ondulado) en vez de dientes separados.
-// SOLAPE FUERTE en ambos estados: 6 tepalos * 2 * ~41 grados = 492 > 360 -> se
-// solapan de sobra y NUNCA dejan huecos/cuñas blancas (ese era el gran defecto).
-// CERRADO: solape fuerte (sin huecos, huevo liso). ABIERTO: algo mas estrecho
-// para que las puntas se SEPAREN al evertirse (se ve el centro), pero el interior
-// ahora es de color saturado -> las separaciones muestran color, no cuñas blancas.
-// Ambos con solape fuerte en el CUERPO. En el abierto los tepalos se AFINAN
-// arriba -> se SEPARAN SOLO en el tercio superior (el cuerpo sigue unido/lleno)
-// y cada punta queda REDONDEADA como una cuchara.
-// Ambos con tepalos ANCHOS y solapados. Abierto solo un pelin mas estrecho ->
-// borde superior con FESTON suave (lobulos anchos y REDONDEADOS), NUNCA puas.
-const ALPHA_CLOSED = 0.72
-const ALPHA_OPEN = 0.64
-function tepalWidth(u, open) {
-  const rise = smooth01(u / 0.12) // nace estrecho del receptaculo
-  // abierto: ancho en el cuerpo y afina a PUNTA SUAVE (arco de hoja) arriba,
-  // como en el dibujo -> tepalos definidos que rematan en punta, no en domo.
-  if (open) return rise * (1 - 0.55 * smooth01((u - 0.5) / 0.5))
-  return rise * (1 - 0.1 * smooth01((u - 0.62) / 0.38))
+// Cada tepalo es un PETALO INDEPENDIENTE (superficie curva tipo hoja) colocado
+// radialmente y rotado, como el lirio -> al abrir se despliega LIMPIO desde
+// cualquier angulo (no se deforma en bola ni puas como el modelo envuelto).
+// Angulo del tepalo respecto a la vertical (u: 0 base .. 1 punta).
+function tepalAngle(u, open) {
+  if (open) {
+    // ABIERTO: copa. El tepalo sube y se abre a ~55 grados (cuenco elegante),
+    // sin recurvar del todo (eso es lirio). Se ve el centro pero no es plano.
+    return rad(12 + 46 * smooth01(u))
+  }
+  // CERRADO: goblet esbelto. Panza suave abajo (sale un poco) y arriba los
+  // tepalos CONVERGEN cerrando en PUNTA SUAVE (el capullo del dibujo).
+  return rad(20 - 44 * smooth01(u))
 }
 
-// Meridiano (radio, altura) del tepalo. CLAVE del arreglo: la CIMA es
-// REDONDEADA (perfil tipo raiz cuadrada -> domo, como el top de un circulo),
-// NUNCA una punta afilada. Antes se integraba un angulo que formaba un cono.
-function normOf(a, b) {
-  let m = 1e-6
-  for (let i = 0; i <= 200; i++) {
-    const u = i / 200
-    const r = Math.pow(u, a) * Math.pow(1 - u, b)
-    if (r > m) m = r
-  }
-  return m
-}
-const CLOSED_NORM = normOf(EGG_A, EGG_B)
-const OPEN_NORM = normOf(OPEN_A, OPEN_B)
-function meridian(u, open) {
-  const y = LENGTH * u
-  // HUEVO rechoncho: base estrecha, hombros LLENOS en el tercio superior, y CIMA
-  // ROMA/redondeada. (1-u)^0.45 dobla el perfil en domo arriba (nunca punta).
-  const egg = (MAXR * Math.pow(u, EGG_A) * Math.pow(1 - u, EGG_B)) / CLOSED_NORM
-  if (!open) return { r: Math.max(BASE_RADIUS, egg), y }
-  // ABIERTO = copa LLENA y REDONDA (florecida): mas ancha que el capullo, con
-  // CORONA REDONDA. La cima no converge a punta: se queda ANCHA (los tepalos
-  // anchos y redondeados forman el borde). Puntas apenas hacia afuera-arriba.
-  const fuller = (MAXR * OPEN_WIDE * Math.pow(u, OPEN_A) * Math.pow(1 - u, OPEN_B)) / OPEN_NORM
-  const crown = MAXR * 0.24 * smooth01(u / 0.9) // arriba no cierra del todo (punta suave)
-  const tipUp = 0.12 * smooth01((u - 0.7) / 0.3) // las puntas se elevan un poco
-  return { r: Math.max(BASE_RADIUS, Math.max(fuller, crown)), y: y + tipUp }
+// Semiancho del tepalo: ANCHO en el cuerpo, estrecho en la base y PUNTA SUAVE
+// (arco), como el dibujo. sin(pi*u)^0.4 -> panza ancha; se sesga hacia arriba.
+function tepalWidth(u) {
+  const s = Math.sin(Math.PI * Math.min(u, 0.9999))
+  return MAX_WIDTH * Math.pow(s, 0.4) * (0.8 + 0.35 * u) // hombros mas altos
 }
 
 function buildPositions(open) {
   const positions = []
   const uvs = []
+  // centerline integrada en el plano YZ (x = 0), como el lirio
+  const cy = [0]
+  const cz = [BASE_RADIUS]
+  const ds = LENGTH / U
+  for (let i = 1; i <= U; i++) {
+    const uMid = (i - 0.5) / U
+    const th = tepalAngle(uMid, open)
+    cy.push(cy[i - 1] + Math.cos(th) * ds)
+    cz.push(cz[i - 1] + Math.sin(th) * ds)
+  }
+  // canal/cuenco transversal: CERRADO envuelve mucho (los 6 tepalos forman el
+  // huevo cerrado); ABIERTO conserva algo de cuenco (cada tepalo = cuchara).
+  const channel = open ? 0.22 : 0.62
   for (let i = 0; i <= U; i++) {
     const u = i / U
-    const { r, y } = meridian(u, open)
-    const alpha = (open ? ALPHA_OPEN : ALPHA_CLOSED) * tepalWidth(u, open)
-    // cada fila se ENVUELVE en un arco de radio r -> el tepalo es un trozo de la
-    // superficie de la copa/huevo (no una lamina plana)
+    const w = tepalWidth(u)
+    const iN = Math.min(i, U - 1)
+    const dy = cy[iN + 1] - cy[iN]
+    const dz = cz[iN + 1] - cz[iN]
+    const tl = Math.hypot(dy, dz) || 1
+    const ny = dz / tl // normal en YZ perpendicular a la tangente
+    const nz = -dy / tl
     for (let j = 0; j <= V; j++) {
-      const v = (j / V) * 2 - 1
-      const th = v * alpha
-      positions.push(r * Math.sin(th), y, r * Math.cos(th))
+      const v = (j / V) * 2 - 1 // -1 .. 1 a lo ancho
+      const cup = channel * (v * v) * w // cuenco a lo largo de la normal
+      positions.push(v * w, cy[i] + ny * cup, cz[i] + nz * cup)
       uvs.push((v + 1) / 2, u)
     }
   }
