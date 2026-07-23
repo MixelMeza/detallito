@@ -27,13 +27,14 @@ function smooth01(x) {
 // Angulo del tepalo respecto a la vertical (u: 0 base .. 1 punta).
 function tepalAngle(u, open) {
   if (open) {
-    // ABIERTO: copa. El tepalo sube y se abre a ~55 grados (cuenco elegante),
-    // sin recurvar del todo (eso es lirio). Se ve el centro pero no es plano.
-    return rad(12 + 46 * smooth01(u))
+    // ABIERTO = tulipan FLORECIDO, LLENO y REDONDO (como la foto): panza ANCHA
+    // (base ~28) y la cima se REDONDEA en DOMO (converge poco). NO es un cono
+    // abierto ni un cuenco de lirio: mantiene la forma redonda del tulipan.
+    return rad(28 - 40 * smooth01(u))
   }
-  // CERRADO: goblet esbelto. Panza suave abajo (sale un poco) y arriba los
-  // tepalos CONVERGEN cerrando en PUNTA SUAVE (el capullo del dibujo).
-  return rad(20 - 44 * smooth01(u))
+  // CERRADO = capullo esbelto y LISO: menos panza (base ~16) y converge mas
+  // arriba -> PUNTA SUAVE. Los tepalos se solapan (canal alto) sin huecos.
+  return rad(16 - 46 * smooth01(u))
 }
 
 // Semiancho del tepalo: ANCHO en el cuerpo, estrecho en la base y PUNTA SUAVE
@@ -56,9 +57,10 @@ function buildPositions(open) {
     cy.push(cy[i - 1] + Math.cos(th) * ds)
     cz.push(cz[i - 1] + Math.sin(th) * ds)
   }
-  // canal/cuenco transversal: CERRADO envuelve mucho (los 6 tepalos forman el
-  // huevo cerrado); ABIERTO conserva algo de cuenco (cada tepalo = cuchara).
-  const channel = open ? 0.22 : 0.62
+  // canal/cuenco transversal: CERRADO envuelve MUCHO (los 6 tepalos se solapan
+  // y forman el capullo LISO sin huecos); ABIERTO conserva bastante cuenco para
+  // que la flor florecida siga REDONDA y llena (no plana ni cono).
+  const channel = open ? 0.42 : 0.72
   for (let i = 0; i <= U; i++) {
     const u = i / U
     const w = tepalWidth(u)
