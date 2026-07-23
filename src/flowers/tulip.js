@@ -57,10 +57,10 @@ function buildPositions(open) {
     cy.push(cy[i - 1] + Math.cos(th) * ds)
     cz.push(cz[i - 1] + Math.sin(th) * ds)
   }
-  // canal/cuenco transversal: CERRADO envuelve MUCHO (los 6 tepalos se solapan
-  // y forman el capullo LISO sin huecos); ABIERTO conserva bastante cuenco para
-  // que la flor florecida siga REDONDA y llena (no plana ni cono).
-  const channel = open ? 0.42 : 0.72
+  // canal/cuenco transversal. CERRADO: MODERADO -> los tepalos se solapan LISOS
+  // formando un capullo suave (si es muy alto se ENROSCAN como rosa). ABIERTO:
+  // conserva cuenco para que la flor florecida siga redonda y llena.
+  const channel = open ? 0.42 : 0.5
   for (let i = 0; i <= U; i++) {
     const u = i / U
     const w = tepalWidth(u)
@@ -139,16 +139,16 @@ export function makeTulipTexture(baseHex = '#d42a2a') {
   // sombra -> define cada tepalo redondeado y marca la COSTURA de solape con el
   // vecino. Mas contraste que antes = tepalos mas definidos (menos "globo liso").
   const sheen = ctx.createLinearGradient(0, 0, c.width, 0)
-  sheen.addColorStop(0.0, 'rgba(0,0,0,0.34)') // costura (borde del tepalo) en sombra
-  sheen.addColorStop(0.12, 'rgba(0,0,0,0.14)')
-  sheen.addColorStop(0.5, 'rgba(255,255,255,0.16)') // lomo del tepalo iluminado
-  sheen.addColorStop(0.88, 'rgba(0,0,0,0.14)')
-  sheen.addColorStop(1.0, 'rgba(0,0,0,0.34)')
+  sheen.addColorStop(0.0, 'rgba(0,0,0,0.16)') // costura SUAVE (no borde duro de rosa)
+  sheen.addColorStop(0.14, 'rgba(0,0,0,0.05)')
+  sheen.addColorStop(0.5, 'rgba(255,255,255,0.12)') // lomo del tepalo apenas iluminado
+  sheen.addColorStop(0.86, 'rgba(0,0,0,0.05)')
+  sheen.addColorStop(1.0, 'rgba(0,0,0,0.16)')
   ctx.fillStyle = sheen
   ctx.fillRect(0, 0, c.width, c.height)
 
-  // VENAS longitudinales sutiles (dos a cada lado del lomo) -> textura de petalo
-  ctx.strokeStyle = 'rgba(0,0,0,0.06)'
+  // VENAS longitudinales muy sutiles
+  ctx.strokeStyle = 'rgba(0,0,0,0.035)'
   ctx.lineWidth = 1.5
   for (const fx of [0.3, 0.7]) {
     ctx.beginPath()
