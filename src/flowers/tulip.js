@@ -32,9 +32,9 @@ function tepalAngle(u, open) {
     // abierto ni un cuenco de lirio: mantiene la forma redonda del tulipan.
     return rad(28 - 40 * smooth01(u))
   }
-  // CERRADO = capullo esbelto y LISO: menos panza (base ~16) y converge mas
-  // arriba -> PUNTA SUAVE. Los tepalos se solapan (canal alto) sin huecos.
-  return rad(16 - 46 * smooth01(u))
+  // CERRADO = capullo LLENO y liso (NO pinchado): panza ancha (base ~22) y
+  // converge SUAVE arriba (top ~-14, no se cierra tanto) -> punta redondeada.
+  return rad(22 - 36 * smooth01(u))
 }
 
 // Semiancho del tepalo: ANCHO en el cuerpo, estrecho en la base y PUNTA SUAVE
